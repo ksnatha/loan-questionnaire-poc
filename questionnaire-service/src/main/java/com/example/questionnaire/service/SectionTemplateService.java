@@ -1,6 +1,7 @@
 package com.example.questionnaire.service;
 
 import com.example.common.template.*;
+import com.example.questionnaire.dto.SectionListItem;
 import com.example.questionnaire.dto.SectionTemplateResponse;
 import com.example.questionnaire.entity.*;
 import com.example.questionnaire.repository.SectionTemplateRepository;
@@ -25,6 +26,99 @@ public class SectionTemplateService {
         this.repo = repo;
         this.validator = validator;
         this.objectMapper = objectMapper;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SectionListItem> listSections() {
+        List<SectionTemplate> all = repo.findAll();
+        Map<String, List<SectionTemplate>> bySection = all.stream()
+            .collect(Collectors.groupingBy(SectionTemplate::getSectionId));
+
+        List<SectionListItem> result = new ArrayList<>();
+        for (Map.Entry<String, List<SectionTemplate>> entry : bySection.entrySet()) {
+            SectionTemplate active = entry.getValue().stream()
+                .filter(st -> st.getStatus() == TemplateStatus.ACTIVE)
+                .max(Comparator.comparingInt(SectionTemplate::getVersion)).orElse(null);
+            SectionTemplate draft = entry.getValue().stream()
+                .filter(st -> st.getStatus() == TemplateStatus.DRAFT)
+                .max(Comparator.comparingInt(SectionTemplate::getVersion)).orElse(null);
+
+            SectionTemplate display = active != null ? active : draft;
+            if (display == null) continue;
+
+            SectionListItem item = new SectionListItem();
+            item.sectionId = entry.getKey();
+            item.labelKey = display.getLabelKey();
+            item.activeVersion = active != null ? active.getVersion() : 0;
+            item.draftVersion = draft != null ? draft.getVersion() : null;
+            item.hasGrid = display.isHasGrid();
+            try {
+                SectionTemplateJson t = objectMapper.readValue(display.getTemplateJson(), SectionTemplateJson.class);
+                item.fieldCount = t.fields != null ? t.fields.size() : 0;
+            } catch (Exception ignored) {}
+            result.add(item);
+        }
+        result.sort(Comparator.comparing(i -> i.sectionId));
+        return result;
+    }
+
+    public SectionTemplate createDraftRevision(String sectionId, SectionTemplateJson newTemplate) {
+        List<SectionTemplate> versions = repo.findBySectionIdOrderByVersionDesc(sectionId);
+        if (versions.isEmpty()) throw new NoSuchElementException("Section not found: " + sectionId);
+
+        versions.stream().filter(st -> st.getStatus() == TemplateStatus.DRAFT).findFirst()
+            .ifPresent(d -> { throw new IllegalStateException(
+                "Draft already exists: " + sectionId + " v" + d.getVersion()); });
+
+        SectionTemplate latestActive = versions.stream()
+            .filter(st -> st.getStatus() == TemplateStatus.ACTIVE).findFirst()
+            .orElseThrow(() -> new IllegalStateException("No ACTIVE version for: " + sectionId));
+
+        try {
+            SectionTemplateJson template = newTemplate != null ? newTemplate
+                : objectMapper.readValue(latestActive.getTemplateJson(), SectionTemplateJson.class);
+
+            List<String> refs = template.fields == null ? List.of()
+                : template.fields.stream()
+                    .filter(f -> f.storage != null && f.storage.type == StorageType.DEDICATED)
+                    .map(f -> f.storage.tableName + "." + f.storage.columnName)
+                    .collect(Collectors.toList());
+
+            SectionTemplate draft = new SectionTemplate();
+            draft.setSectionId(sectionId);
+            draft.setVersion(latestActive.getVersion() + 1);
+            draft.setLabelKey(latestActive.getLabelKey());
+            draft.setStatus(TemplateStatus.DRAFT);
+            draft.setHasGrid(template.grids != null && !template.grids.isEmpty());
+            draft.setDedicatedColumnRefs(objectMapper.writeValueAsString(refs));
+            draft.setTemplateJson(objectMapper.writeValueAsString(template));
+            return repo.save(draft);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create draft revision", e);
+        }
+    }
+
+    public SectionTemplate updateDraft(String sectionId, Integer version, SectionTemplateJson newTemplate) {
+        SectionTemplate st = repo.findBySectionIdAndVersion(sectionId, version)
+            .orElseThrow(() -> new NoSuchElementException("Not found: " + sectionId + " v" + version));
+        if (st.getStatus() != TemplateStatus.DRAFT) {
+            throw new IllegalStateException("Version " + version + " is not in DRAFT status");
+        }
+        try {
+            List<String> refs = newTemplate.fields == null ? List.of()
+                : newTemplate.fields.stream()
+                    .filter(f -> f.storage != null && f.storage.type == StorageType.DEDICATED)
+                    .map(f -> f.storage.tableName + "." + f.storage.columnName)
+                    .collect(Collectors.toList());
+            st.setHasGrid(newTemplate.grids != null && !newTemplate.grids.isEmpty());
+            st.setDedicatedColumnRefs(objectMapper.writeValueAsString(refs));
+            st.setTemplateJson(objectMapper.writeValueAsString(newTemplate));
+            return repo.save(st);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update draft", e);
+        }
     }
 
     public SectionTemplate create(String sectionId, String labelKey, SectionTemplateJson template) {

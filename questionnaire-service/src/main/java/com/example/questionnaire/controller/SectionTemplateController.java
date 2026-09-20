@@ -5,6 +5,7 @@ import com.example.questionnaire.entity.SectionTemplate;
 import com.example.questionnaire.service.SectionTemplateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/sections")
@@ -14,6 +15,11 @@ public class SectionTemplateController {
 
     public SectionTemplateController(SectionTemplateService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    public List<SectionListItem> list() {
+        return service.listSections();
     }
 
     @PostMapping
@@ -27,6 +33,23 @@ public class SectionTemplateController {
     public SectionTemplateResponse get(@PathVariable String sectionId,
                                         @PathVariable Integer version) {
         return service.getResponse(sectionId, version);
+    }
+
+    @PostMapping("/{sectionId}/draft-revision")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SectionTemplateResponse createDraftRevision(@PathVariable String sectionId,
+                                                        @RequestBody(required = false) DraftRevisionRequest req) {
+        SectionTemplate st = service.createDraftRevision(
+            sectionId, req != null ? req.template : null);
+        return service.toResponse(st);
+    }
+
+    @PutMapping("/{sectionId}/versions/{version}")
+    public SectionTemplateResponse updateDraft(@PathVariable String sectionId,
+                                                @PathVariable Integer version,
+                                                @RequestBody UpdateSectionRequest req) {
+        SectionTemplate st = service.updateDraft(sectionId, version, req.template);
+        return service.toResponse(st);
     }
 
     @PostMapping("/{sectionId}/versions/{version}/publish")
