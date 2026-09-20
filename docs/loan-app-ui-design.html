@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loan application — Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-app: #F3F6F9;
+    --bg-banner: #14345C;
+    --bg-banner-2: #1D4A82;
+    --surface: #FFFFFF;
+    --border: #DCE3EA;
+    --border-strong: #C1CBD6;
+    --text-primary: #1A2433;
+    --text-secondary: #5B6B7E;
+    --text-muted: #8B97A6;
+    --text-on-banner: #F5F8FB;
+    --text-on-banner-muted: #AFC4DE;
+    --accent: #2D6CB0;
+    --accent-light: #E8F0FA;
+    --risk-high-bg: #FBE7E5;  --risk-high-text: #A0342A;
+    --risk-med-bg:  #FCEFDB;  --risk-med-text:  #93630C;
+    --risk-low-bg:  #E3F2E9;  --risk-low-text:  #1E7A46;
+    --status-bg: #EBEEF2;     --status-text: #55606E;
+    --nav-active-bg: #E8F0FA;
+    --nav-complete: #1E7A46;
+    --nav-current: #2D6CB0;
+    --nav-pending: #C1CBD6;
+    --danger: #B3261E;
+    --radius: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-app: #10161F;
+      --bg-banner: #0B2038;
+      --bg-banner-2: #123256;
+      --surface: #161F2A;
+      --border: #2A3644;
+      --border-strong: #3B4A5A;
+      --text-primary: #E7ECF2;
+      --text-secondary: #A7B3C2;
+      --text-muted: #788595;
+      --text-on-banner: #F2F6FA;
+      --text-on-banner-muted: #9FB6D6;
+      --accent: #5B9BDB;
+      --accent-light: #1B2C40;
+      --risk-high-bg: #3A1E1C;  --risk-high-text: #F2A79E;
+      --risk-med-bg:  #3A2C12;  --risk-med-text:  #F2C878;
+      --risk-low-bg:  #16301F;  --risk-low-text:  #8FD9AC;
+      --status-bg: #232C36;     --status-text: #B7C1CC;
+      --nav-active-bg: #1B2C40;
+      --nav-complete: #6FCB8F;
+      --nav-current: #5B9BDB;
+      --nav-pending: #3B4A5A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg-app: #10161F;
+    --bg-banner: #0B2038;
+    --bg-banner-2: #123256;
+    --surface: #161F2A;
+    --border: #2A3644;
+    --border-strong: #3B4A5A;
+    --text-primary: #E7ECF2;
+    --text-secondary: #A7B3C2;
+    --text-muted: #788595;
+    --text-on-banner: #F2F6FA;
+    --text-on-banner-muted: #9FB6D6;
+    --accent: #5B9BDB;
+    --accent-light: #1B2C40;
+    --risk-high-bg: #3A1E1C;  --risk-high-text: #F2A79E;
+    --risk-med-bg:  #3A2C12;  --risk-med-text:  #F2C878;
+    --risk-low-bg:  #16301F;  --risk-low-text:  #8FD9AC;
+    --status-bg: #232C36;     --status-text: #B7C1CC;
+    --nav-active-bg: #1B2C40;
+    --nav-complete: #6FCB8F;
+    --nav-current: #5B9BDB;
+    --nav-pending: #3B4A5A;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-app);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ---- Banner ---- */
+  .banner {
+    background: linear-gradient(180deg, var(--bg-banner-2), var(--bg-banner));
+    color: var(--text-on-banner);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 32px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .banner-left { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .banner-id {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    color: var(--text-on-banner-muted);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: var(--radius);
+    padding: 3px 8px;
+  }
+  .banner-name { font-weight: 600; font-size: 17px; }
+  .banner-sub { font-size: 13px; color: var(--text-on-banner-muted); }
+  .banner-stats { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { font-size: 11px; color: var(--text-on-banner-muted); }
+  .stat-value { font-size: 15px; font-weight: 600; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+    width: fit-content;
+  }
+  .risk-high { background: var(--risk-high-bg); color: var(--risk-high-text); }
+  .risk-medium { background: var(--risk-med-bg); color: var(--risk-med-text); }
+  .risk-low { background: var(--risk-low-bg); color: var(--risk-low-text); }
+  .status-draft { background: rgba(255,255,255,0.14); color: var(--text-on-banner); }
+
+  /* ---- Body layout ---- */
+  .tabstrip {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    gap: 4px;
+  }
+  .tab {
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+
+  .body { display: flex; flex: 1; min-height: 0; }
+
+  .sidebar {
+    width: 236px;
+    flex-shrink: 0;
+    background: var(--bg-app);
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+  }
+  .sidebar ul { list-style: none; margin: 0; padding: 0; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--accent-light); color: var(--text-primary); }
+  .nav-item.active {
+    background: var(--nav-active-bg);
+    color: var(--text-primary);
+    font-weight: 500;
+    border-left-color: var(--accent);
+  }
+  .nav-indicator {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--nav-pending);
+    flex-shrink: 0;
+  }
+  .nav-indicator.complete { background: var(--nav-complete); }
+  .nav-indicator.current { background: var(--nav-current); }
+
+  .content { flex: 1; padding: 28px 32px; overflow-y: auto; }
+  .section-panel { display: none; max-width: 780px; }
+  .section-panel.active { display: block; }
+  .section-title { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .section-desc { color: var(--text-secondary); font-size: 13px; margin: 0 0 24px; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 24px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .field .req { color: var(--danger); margin-left: 2px; }
+  .field .hint { font-size: 12px; color: var(--text-muted); }
+  .field input[type="text"],
+  .field input[type="number"],
+  .field select,
+  .field textarea {
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+  }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .radio-row { display: flex; gap: 18px; align-items: center; height: 36px; }
+  .radio-row label { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 14px; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+  /* ---- Grid table (collateral) ---- */
+  table.grid-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.grid-table th {
+    text-align: left; font-weight: 500; color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-strong); padding: 8px 10px;
+  }
+  table.grid-table td {
+    border-bottom: 1px solid var(--border); padding: 6px 10px;
+  }
+  table.grid-table input, table.grid-table select {
+    width: 100%; font-family: inherit; font-size: 13px; color: var(--text-primary);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 5px 7px;
+  }
+  .btn {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    background: var(--surface); color: var(--accent);
+    border: 1px solid var(--border-strong); border-radius: var(--radius);
+    padding: 7px 12px; cursor: pointer;
+  }
+  .btn:hover { background: var(--accent-light); }
+  .btn-remove {
+    background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 15px;
+  }
+  .btn-remove:hover { color: var(--danger); }
+
+  .checklist-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .checklist-row:last-child { border-bottom: none; }
+
+  @media (max-width: 560px) {
+    .body { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding: 8px 0; }
+    .sidebar ul { display: flex; overflow-x: auto; }
+    .nav-item { border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+    .nav-item.active { border-left-color: transparent; border-bottom-color: var(--accent); }
+    .field-grid { grid-template-columns: 1fr; }
+    .banner-stats { gap: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="banner">
+    <div class="banner-left">
+      <span class="banner-id">L2026-3</span>
+      <div>
+        <div class="banner-name">Acme Corp expansion facility</div>
+        <div class="banner-sub">Borrower: Acme Corp Holdings LLC</div>
+      </div>
+    </div>
+    <div class="banner-stats">
+      <div class="stat">
+        <span class="stat-label">Loan amount</span>
+        <span class="stat-value">$2,450,000</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Risk rating</span>
+        <span class="badge risk-medium">Medium</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Status</span>
+        <span class="badge status-draft">Draft</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabstrip">
+    <div class="tab active">Proposal</div>
+  </div>
+
+  <div class="body">
+    <nav class="sidebar">
+      <ul>
+        <li class="nav-item active" data-target="key-info"><span class="nav-indicator complete"></span>Key information</li>
+        <li class="nav-item" data-target="additional-info"><span class="nav-indicator current"></span>Additional information</li>
+        <li class="nav-item" data-target="legal-vehicles"><span class="nav-indicator"></span>Legal vehicles</li>
+        <li class="nav-item" data-target="eligibility"><span class="nav-indicator"></span>Eligibility check</li>
+        <li class="nav-item" data-target="associated-records"><span class="nav-indicator"></span>Associated records</li>
+        <li class="nav-item" data-target="approver"><span class="nav-indicator"></span>Approver attestation</li>
+      </ul>
+    </nav>
+
+    <main class="content">
+
+      <!-- Key Information -->
+      <section id="key-info" class="section-panel active">
+        <h1 class="section-title">Key information</h1>
+        <p class="section-desc">Core proposal details.</p>
+        <div class="field-grid">
+          <div class="field">
+            <label for="proposalName">Proposal name</label>
+            <input type="text" id="proposalName" value="Acme Corp expansion facility">
+          </div>
+          <div class="field">
+            <label for="loanAmount">Loan amount</label>
+            <input type="text" id="loanAmount" value="$2,450,000">
+          </div>
+          <div class="field full">
+            <label for="proposalDesc">Proposal description</label>
+            <textarea id="proposalDesc">Term facility to fund a second distribution center and associated equipment purchases.</textarea>
+          </div>
+          <div class="field">
+            <label>Existing banking relationship?</label>
+            <div class="radio-row">
+              <label><input type="radio" name="relFlag" value="yes" checked onchange="toggleRelationship(true)"> Yes</label>
+              <label><input type="radio" name="relFlag" value="no" onchange="toggleRelationship(false)"> No</label>
+            </div>
+          </div>
+          <div class="field" id="relIdField">
+            <label for="relId">Relationship ID</label>
+            <input type="text" id="relId" value="REL-04821">
+          </div>
+        </div>
+      </section>
+
+      <!-- Additional Information -->
+      <section id="additional-info" class="section-panel">
+        <h1 class="section-title">Additional information</h1>
+        <p class="section-desc">Loan terms and structure.</p>
+        <div class="field-grid">
+          <div class="field">
+            <label for="loanPurpose">Loan purpose</label>
+            <select id="loanPurpose">
+              <option>Working capital</option>
+              <option>Refinance</option>
+              <option>Equipment purchase</option>
+              <option>Expansion</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="loanTerm">Loan term (months)</label>
+            <input type="number" id="loanTerm" value="60">
+          </div>
+          <div class="field">
+            <label for="repayFreq">Repayment frequency</label>
+            <select id="repayFreq">
+              <option>Monthly</option>
+              <option>Quarterly</option>
+              <option>Annually</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rateType">Interest rate type</label>
+            <select id="rateType" onchange="toggleRateCap(this.value)">
+              <option value="fixed">Fixed</option>
+              <option value="variable">Variable</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rateCap">Rate cap (%)<span class="req" id="rateCapReq" style="display:none">*</span></label>
+            <input type="number" id="rateCap" step="0.1" placeholder="—">
+            <span class="hint" id="rateCapHint">Required only when rate type is Variable</span>
+          </div>
+          <div class="field">
+            <label>Requires collateral?</label>
+            <div class="radio-row">
+              <label><input type="radio" name="collateral" checked> Yes</label>
+              <label><input type="radio" name="collateral"> No</label>
+            </div>
+          </div>
+          <div class="field full">
+            <label for="comments">Additional comments</label>
+            <textarea id="comments" placeholder="Optional notes"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- Legal Vehicles -->
+      <section id="legal-vehicles" class="section-panel">
+        <h1 class="section-title">Legal vehicles</h1>
+        <p class="section-desc">Entities party to this facility.</p>
+        <div class="field-grid">
+          <div class="field">
+            <label for="entityName">Entity name</label>
+            <input type="text" id="entityName" value="Acme Corp Holdings LLC">
+          </div>
+          <div class="field">
+            <label for="entityType">Entity type</label>
+            <select id="entityType">
+              <option>LLC</option>
+              <option>Corporation</option>
+              <option>Partnership</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="jurisdiction">Jurisdiction</label>
+            <input type="text" id="jurisdiction" value="Delaware">
+          </div>
+        </div>
+      </section>
+
+      <!-- Eligibility Check -->
+      <section id="eligibility" class="section-panel">
+        <h1 class="section-title">Eligibility check</h1>
+        <p class="section-desc">Standard eligibility screening.</p>
+        <div class="checklist-row">
+          <span>Borrower is in good standing</span>
+          <div class="radio-row" style="margin-left:auto"><label><input type="radio" name="e1" checked> Yes</label><label><input type="radio" name="e1"> No</label></div>
+        </div>
+        <div class="checklist-row">
+          <span>Industry is within lending appetite</span>
+          <div class="radio-row" style="margin-left:auto"><label><input type="radio" name="e2" checked> Yes</label><label><input type="radio" name="e2"> No</label></div>
+        </div>
+        <div class="checklist-row">
+          <span>No active covenant breaches</span>
+          <div class="radio-row" style="margin-left:auto"><label><input type="radio" name="e3" checked> Yes</label><label><input type="radio" name="e3"> No</label></div>
+        </div>
+      </section>
+
+      <!-- Associated Records -->
+      <section id="associated-records" class="section-panel">
+        <h1 class="section-title">Associated records</h1>
+        <p class="section-desc">Collateral properties securing this facility.</p>
+        <table class="grid-table" id="collateralTable">
+          <thead>
+            <tr>
+              <th>Property address</th>
+              <th style="width:140px">Property type</th>
+              <th style="width:120px">Estimated value</th>
+              <th style="width:120px">Lien position</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="text" value="1200 Distribution Way, Newark, NJ"></td>
+              <td>
+                <select><option>Commercial</option><option>Warehouse</option><option>Office</option></select>
+              </td>
+              <td><input type="text" value="$1,800,000"></td>
+              <td>
+                <select><option>First</option><option>Second</option></select>
+              </td>
+              <td><button class="btn-remove" onclick="this.closest('tr').remove()">✕</button></td>
+            </tr>
+            <tr>
+              <td><input type="text" value="45 Harbor Rd, Elizabeth, NJ"></td>
+              <td>
+                <select><option>Warehouse</option><option>Commercial</option><option>Office</option></select>
+              </td>
+              <td><input type="text" value="$650,000"></td>
+              <td>
+                <select><option>First</option><option>Second</option></select>
+              </td>
+              <td><button class="btn-remove" onclick="this.closest('tr').remove()">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:14px">
+          <button class="btn" onclick="addCollateralRow()">+ Add property</button>
+        </div>
+      </section>
+
+      <!-- Approver Attestation -->
+      <section id="approver" class="section-panel">
+        <h1 class="section-title">Approver attestation</h1>
+        <p class="section-desc">Completed at final approval.</p>
+        <div class="field-grid">
+          <div class="field">
+            <label for="approverName">Approver name</label>
+            <input type="text" id="approverName" placeholder="—">
+          </div>
+          <div class="field">
+            <label for="attestDate">Attestation date</label>
+            <input type="text" id="attestDate" placeholder="—">
+          </div>
+          <div class="field full">
+            <label><input type="checkbox"> I attest that this proposal has been reviewed in accordance with credit policy.</label>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.nav-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.nav-item').forEach(function(i) { i.classList.remove('active'); });
+      document.querySelectorAll('.section-panel').forEach(function(p) { p.classList.remove('active'); });
+      item.classList.add('active');
+      document.getElementById(item.dataset.target).classList.add('active');
+    });
+  });
+
+  function toggleRelationship(show) {
+    document.getElementById('relIdField').style.display = show ? 'flex' : 'none';
+  }
+
+  function toggleRateCap(rateType) {
+    var isVariable = rateType === 'variable';
+    document.getElementById('rateCapReq').style.display = isVariable ? 'inline' : 'none';
+    document.getElementById('rateCapHint').textContent = isVariable
+      ? 'Required for variable-rate loans'
+      : 'Required only when rate type is Variable';
+  }
+
+  function addCollateralRow() {
+    var tbody = document.querySelector('#collateralTable tbody');
+    var row = document.createElement('tr');
+    row.innerHTML =
+      '<td><input type="text" placeholder="Property address"></td>' +
+      '<td><select><option>Commercial</option><option>Warehouse</option><option>Office</option></select></td>' +
+      '<td><input type="text" placeholder="$0"></td>' +
+      '<td><select><option>First</option><option>Second</option></select></td>' +
+      '<td><button class="btn-remove" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+    tbody.appendChild(row);
+  }
+</script>
+</body>
+</html>
