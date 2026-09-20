@@ -15,6 +15,27 @@ session's blast radius small enough to actually review.
 Stack: Java, Spring Boot, JPA/Hibernate, H2 (POC) / Oracle pre-21c (production
 target). Five components per Architecture.md.
 
+**Testing approach — full coverage on production-bound code, light on the
+throwaway stub.** Every slice writes its tests alongside its code, not
+bolted on afterward — a slice isn't done when it compiles, it's done when
+its tests pass. Stack: JUnit 5 + Mockito for Java unit tests,
+`@SpringBootTest`/`@DataJpaTest`/`MockMvc` for Spring integration tests
+against H2, Jest + React Testing Library for both UIs. No end-to-end browser
+testing (Playwright etc.) — manual click-through against each slice's
+existing acceptance criteria covers that role for a POC.
+
+- **Full coverage**: `questionnaire-service`, `application-service`, the
+  dispatch/versioning mechanisms (Decisions 2 and 3), both React UIs' generic
+  renderers.
+- **Light coverage, deliberately**: `lookup-stub-service` — it's explicitly a
+  throwaway stand-in for a real external integration (Architecture.md), so a
+  handful of sanity tests (date-filtering on `code_set`, response shape) is
+  enough; don't sink effort into thoroughly testing code that's meant to be
+  deleted.
+
+Each slice section below lists its specific tests under **Tests**, alongside
+its **Acceptance** criteria.
+
 ---
 
 ## Phase 0 — Workspace setup
@@ -49,10 +70,13 @@ implementations):
    application-service (create/save-draft/submit/get-for-render, snapshot
    resolution), lookup-stub-service (`/code-sets/{type}?asOf=`,
    `/code-sets/{type}/{code}`, `/lookups/{sourceKey}`).
-5. **`/docs/decisions.md`** — one paragraph each on: dropdown snapshot-vs-live
-   policy, mid-flight snapshot-change behavior (already decided: stay pinned
-   until resubmission), and anything else Architecture.md left as "decide
-   during build."
+5. **`/docs/decisions.md`** — record the dropdown resolution default
+   (Architecture.md Decision 4: resolve as of the record's original creation
+   date, including for in-progress records — not just "decide it," it's
+   already decided; this file records the decision, doesn't make it), the
+   mid-flight snapshot-change behavior (already decided: stay pinned until
+   resubmission), and anything else Architecture.md left as "decide during
+   build."
 
 **Acceptance:** you review and approve before Slice A starts. Don't let a
 session proceed past this gate without explicit sign-off.
@@ -73,6 +97,13 @@ conditionals, no grids, no rating engine yet.
   `application_number_counter`) → fetch-for-render → save → submit.
 - application-ui: render the tab, render the section, render three DEDICATED
   fields, save, submit.
+
+**Tests:** `@SpringBootTest` + `MockMvc` integration test covering
+create → save-draft → submit for all 3 DEDICATED fields; unit test asserting
+a DEDICATED field pointing at an unlisted table/column is rejected at
+publish time (Architecture.md Decision 6 — write this test now, while the
+allowlist mechanism is new, not later). React Testing Library test rendering
+the section from template JSON and confirming all 3 fields appear.
 
 **Acceptance:** a loan application can be created, rendered in React, saved,
 and submitted, entirely through the real pipe — questionnaire-service →
@@ -95,8 +126,15 @@ complex is layered on.
   `INTEREST_RATE_TYPE`. `GET /code-sets/{type}?asOf=` and
   `GET /code-sets/{type}/{code}`.
 - application-service: dropdown hydration through the one client interface
-  covering `STATIC`/`CODE_SET`/`EXTERNAL` (Decision 4), snapshot-vs-live
-  policy per `/docs/decisions.md`.
+  covering `STATIC`/`CODE_SET`/`EXTERNAL` (Decision 4), resolving stored
+  answers as of the record's original creation date per the decided default.
+
+**Tests:** unit tests for the `STATIC`/`CODE_SET`/`EXTERNAL` client interface,
+including the `code_set` date-filter logic (`start_date <= asOf <= end_date
+AND active_ind = 'Y'`) — this is the light-coverage stub, so a handful of
+cases (active, expired, future-dated, inactive) is enough, not exhaustive.
+Integration test confirming a section with mixed DEDICATED + EAV fields
+persists both correctly in one save.
 
 **Acceptance:** a section template with both DEDICATED and EAV fields renders
 and saves correctly; a CODE_SET-sourced dropdown resolves through the real
@@ -116,6 +154,12 @@ lookup-stub-service call.
   both sides per Architecture.md Decision 7.
 - Purge any answer value submitted under a hidden field.
 
+**Tests:** unit tests for Demo 1 and Demo 2 as explicit, permanent regression
+cases (not just manually verified once) — both the rule evaluator logic and
+a server-side integration test proving a hidden-field submission gets
+purged even if the client sends it anyway. React Testing Library test
+covering the client-side visibility toggle.
+
 **Acceptance:** both conditional examples work correctly, are enforced
 server-side even if bypassed client-side, and the rule evaluator has no
 field-specific branching in it — it's generic over any `SECTION`-scoped rule.
@@ -132,6 +176,12 @@ field-specific branching in it — it's generic over any `SECTION`-scoped rule.
 - Confirm the same rule evaluator from Slice C handles a `ROW`-scoped rule
   without special-casing (add one simple row-scoped example if none exists
   yet from earlier slices).
+
+**Tests:** integration test for `row_index` persistence across multiple
+collateral rows (add, save, reload, confirm row identity and order); unit
+test for the `ROW`-scoped rule reusing the same evaluator class as Slice C's
+`SECTION`-scoped tests — this is what proves scope was actually generalized,
+not just visually similar.
 
 **Acceptance:** multiple collateral rows can be added, saved, and rendered
 back correctly with row identity preserved.
@@ -152,6 +202,14 @@ back correctly with row identity preserved.
 - Live recompute: every `save-draft` call recomputes and returns
   `risk_rating` against current answers and the loan's pinned snapshot.
 
+**Tests:** unit test proving dispatch is a pure map lookup — add a throwaway
+`ratingV3` `@Component` in the test itself and assert it's callable via the
+bean-name map with zero changes to any dispatch code (this is the test that
+actually enforces Decision 3, not just documents it). Unit test for
+`ratingV1`'s collateral-bump logic (Demo 3). Unit test for
+`application_number_counter` — year reset, no collision under concurrent
+creation in the same year. Integration test for `LoanParty` add/edit.
+
 **Acceptance:** toggling `requires_collateral` on a draft visibly changes the
 displayed rating on the next save, with zero `if`/`switch` on version number
 anywhere in the dispatch path.
@@ -167,12 +225,16 @@ hardening numbers in the next phase.
 1. Create loan A under the current `ACTIVE` snapshot.
 2. Publish a new Additional Information section version (clone-forward a new
    snapshot per Architecture.md Decision 2, overriding only the
-   `TAB_TEMPLATE` item).
+   `SECTION_ADDITIONAL_INFORMATION` item — `TAB_TEMPLATE` and every other
+   item carry forward unchanged).
 3. Reopen A (still `DRAFT`) — renders under its originally pinned snapshot,
    unchanged.
 4. Create loan B fresh — renders under the new snapshot.
-5. Confirm `TAB_TEMPLATE` version only bumps on section *composition*
-   changes, not content-only changes within an existing section.
+5. Confirm `TAB_TEMPLATE`'s own version only bumps on section *composition*
+   changes (reorder/add/remove), never on a section's content-only change —
+   which is now structurally impossible to conflate, since each section's
+   version lives in its own `CONFIG_SNAPSHOT_ITEM` row, not inside
+   `TAB_TEMPLATE_SECTION`.
 
 ### Axis 2 — reference/static data (code_set) versioning
 1. On loan A, set `loan_purpose = REFI`.
@@ -195,10 +257,19 @@ hardening numbers in the next phase.
 4. Create loan C fresh — pinned to the new snapshot, rating reflects
    `ratingV2`'s collateral-aware logic, still live-recomputing.
 
-**Acceptance:** a short written or recorded walkthrough, one per axis,
-showing "old loans keep behaving old, new loans pick up new" holding
-independently for UI, reference data, and business logic — via the snapshot
-mechanism, not per-field version columns.
+**Tests — this slice's primary deliverable, not an addition to it.** Each
+axis above becomes an automated integration test, not just a one-time manual
+walkthrough: create loan A, clone-forward a new snapshot, assert A still
+resolves under its original snapshot on every axis (template rendering,
+code_set label resolution, rating computation), then assert a fresh loan
+picks up the new snapshot on all three. These are the tests most likely to
+matter after this conversation ends — they're what catches a future change
+quietly breaking the one property this whole POC exists to prove.
+
+**Acceptance:** the automated tests above pass, plus a short written or
+recorded walkthrough for human review — "old loans keep behaving old, new
+loans pick up new" holding independently for UI, reference data, and
+business logic, via the snapshot mechanism, not per-field version columns.
 
 ---
 

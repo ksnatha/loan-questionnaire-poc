@@ -175,20 +175,34 @@ branches on where a dropdown came from:
 - **EXTERNAL** — `{sourceKey}` param, resolved against lookup-stub-service's
   external-system simulation.
 
-Whether reopening a draft re-fetches live option values or uses what was
-cached at draft-creation time is a per-field policy decision, resolved in
-`/docs/decisions.md` during the build (see the AI Agent Build Instructions).
+**Decided default policy — resolve as of the record's original creation
+date, including for in-progress/DRAFT records.** Reopening a draft does
+**not** re-fetch live option values for what's already been answered —
+`code_set` lookups resolve against the code active on the date the loan was
+first created, whether the loan is a day old or has sat in DRAFT for months.
+This is what makes L2026-1 in the sample data behave correctly even while
+still in progress. A specific field can be flagged for live resolution
+instead if a genuine business need shows up during the build, but that's an
+explicit per-field exception to this default, not the default itself.
 
 ---
 
 ## Decision 5 — tab vs. section versioning are independent axes
 
-A `TAB_TEMPLATE` (payload: ordered `{section_id, pinned_section_version}`
-pairs) versions independently of the `SECTION_TEMPLATE`s it references.
-Reordering sections, renaming a section, or adding/removing a section bumps
-the tab version even if no field inside any section changed; changing a
-question's label or adding a field bumps only that section's version. A
-submission's `CONFIG_SNAPSHOT` pins both, transitively.
+`TAB_TEMPLATE` versions purely on **composition**: the ordered list of
+`section_id`s it contains. It does **not** pin a section version — that's
+deliberate, and corrects an earlier draft of this schema that had it pinning
+`{section_id, section_version}` pairs directly, which meant any section
+content change forced a new `TAB_TEMPLATE` version too, contradicting the
+independence this decision claims. Each section's specific version is
+instead pinned independently, as its own `CONFIG_SNAPSHOT_ITEM` row
+(`version_type = 'SECTION_<SECTION_ID>'`), alongside the `TAB_TEMPLATE` and
+`RATING_LOGIC` items. Reordering, adding, or removing a section bumps
+`TAB_TEMPLATE`'s version; changing a section's content bumps only that
+section's own version and only the corresponding `CONFIG_SNAPSHOT_ITEM` row
+— a `CONFIG_SNAPSHOT` clone-forward publish, not a new `TAB_TEMPLATE`. A
+loan's `CONFIG_SNAPSHOT` pins the exact combination — tab composition, every
+section's version, and rating logic — as one coherent, published unit.
 
 ---
 
@@ -238,7 +252,11 @@ designing for it from day one is nearly free.
 1. No dynamic SQL from template metadata (Decision 6).
 2. Rule scope must be explicit and shared across section/row/tab (Decision 7).
 3. Write and read models are allowed to diverge (Decision 8).
-4. Dropdown snapshot-vs-live policy is decided per field, not assumed.
+4. Dropdown resolution for stored answers defaults to resolving as of the
+   record's original creation date, including for in-progress records —
+   never silently switches to live values on reopen. Per-field live-mode
+   exceptions require an explicit, deliberate flag, not silent default
+   behavior.
 5. Version/strategy lookups are O(1) map lookups, never a linear scan.
 6. Labels are i18n-ready from day one (Decision 9).
 7. Mid-flight template/snapshot changes: an in-progress submission stays
@@ -251,6 +269,19 @@ designing for it from day one is nearly free.
    columns on `LOAN_APPLICATION`.
 10. Versioned business logic dispatches via bean-name lookup in a
     Spring-populated map (Decision 3), never `if`/`switch` on version number.
+11. **Automated test coverage is full on production-bound code, deliberately
+    light on the throwaway stub.** `questionnaire-service`,
+    `application-service`, the dispatch/versioning mechanisms, and both React
+    UIs' generic renderers get full unit + integration coverage
+    (JUnit 5/Mockito, Spring `@SpringBootTest`/`@DataJpaTest`/`MockMvc`, Jest +
+    React Testing Library). `lookup-stub-service` gets sanity-level coverage
+    only, since it's explicitly a stand-in for a real external integration,
+    not production code. Tests are written alongside each slice's code, not
+    added afterward — see the AI Agent Build Instructions doc's per-slice
+    **Tests** entries. The three-axis versioning demonstration (Slice F) is
+    the one place this is non-negotiable: it becomes automated integration
+    tests, not just a one-time manual walkthrough, because it's the single
+    property this whole POC exists to prove and keep proven.
 
 ---
 
@@ -361,10 +392,10 @@ counter `LOAN_APPLICATION` creation logic reads and increments.
 ```mermaid
 erDiagram
   TAB_TEMPLATE ||--o{ TAB_TEMPLATE_SECTION : has
-  TAB_TEMPLATE_SECTION }o--|| SECTION_TEMPLATE : "pins version, cross-service"
   SECTION_TEMPLATE }o--o{ LABEL_TRANSLATION : "label_key resolves via"
   CONFIG_SNAPSHOT ||--o{ CONFIG_SNAPSHOT_ITEM : has
   CONFIG_SNAPSHOT_ITEM }o--|| TAB_TEMPLATE : "TAB_TEMPLATE item, cross-service"
+  CONFIG_SNAPSHOT_ITEM }o--|| SECTION_TEMPLATE : "one item per section, cross-service"
   LOAN_APPLICATION }o--|| CONFIG_SNAPSHOT : "pinned to"
   LOAN_APPLICATION ||--o{ LOAN_PARTY : has
   LOAN_APPLICATION ||--o{ USER_ANSWERS : has
@@ -382,7 +413,6 @@ erDiagram
     bigint id PK
     bigint tab_template_id FK
     string section_id
-    int section_version
     int display_order
   }
   SECTION_TEMPLATE {

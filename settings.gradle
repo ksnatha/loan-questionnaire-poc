@@ -1,0 +1,6 @@
+rootProject.name = 'loan-questionnaire-poc'
+
+include 'common'
+include 'lookup-stub-service'
+include 'questionnaire-service'
+include 'application-service'
