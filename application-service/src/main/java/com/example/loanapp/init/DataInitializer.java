@@ -36,10 +36,15 @@ public class DataInitializer implements CommandLineRunner {
         snapshot.setEffectiveStart(LocalDate.now());
         snapshotRepo.save(snapshot);
 
-        snapshotItem(snapshot.getId(), "TAB_TEMPLATE", 1, null, "proposal");
-        snapshotItem(snapshot.getId(), "SECTION_KEY_INFORMATION", 1, null, null);
-        snapshotItem(snapshot.getId(), "SECTION_ASSOCIATED_RECORDS", 1, null, null);
-        snapshotItem(snapshot.getId(), "RATING_LOGIC", 1, "ratingV1", null);
+        snapshotItem(snapshot.getId(), "TAB_TEMPLATE",                   1, null,      "proposal");
+        snapshotItem(snapshot.getId(), "SECTION_KEY_INFORMATION",        1, null,      null);
+        snapshotItem(snapshot.getId(), "SECTION_ASSOCIATED_RECORDS",     1, null,      null);
+        snapshotItem(snapshot.getId(), "SECTION_GUARANTORS",             1, null,      null);
+        snapshotItem(snapshot.getId(), "SECTION_FINANCIAL_DETAILS",      1, null,      null);
+        snapshotItem(snapshot.getId(), "SECTION_COMPLIANCE_AML",         1, null,      null);
+        snapshotItem(snapshot.getId(), "SECTION_EMPLOYMENT_INCOME",      1, null,      null);
+        snapshotItem(snapshot.getId(), "SECTION_PROPERTY_DETAILS",       1, null,      null);
+        snapshotItem(snapshot.getId(), "RATING_LOGIC",                   1, "ratingV1",null);
     }
 
     private void seedCounter() {

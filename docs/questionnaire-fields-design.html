@@ -1,0 +1,1443 @@
+<title>Phase 7 Field Design</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --bg: #F0F4F8;
+    --surface: #FFFFFF;
+    --surface-2: #F7FAFC;
+    --border: #D8E2ED;
+    --border-strong: #B0C0D4;
+    --navy: #1B2D42;
+    --navy-mid: #2E4A6B;
+    --text: #1E2D3D;
+    --text-2: #4A5E72;
+    --text-muted: #7A8FA3;
+    --accent: #0A6EB4;
+    --accent-bg: #EBF4FF;
+    --teal: #0B7A75;
+    --teal-bg: #E6F5F4;
+    --amber: #B45309;
+    --amber-bg: #FEF3C7;
+    --rose: #9B1B2E;
+    --rose-bg: #FDE8EC;
+    --green: #166534;
+    --green-bg: #DCFCE7;
+    --violet: #5B21B6;
+    --violet-bg: #EDE9FE;
+    --dedicated-col: #0B6FA3;
+    --eav-col: #0B7A75;
+    --yesno-col: #5B21B6;
+    --radius: 7px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0D1520;
+      --surface: #16212E;
+      --surface-2: #1B2A39;
+      --border: #253343;
+      --border-strong: #3A4E62;
+      --navy: #A6BDD4;
+      --navy-mid: #7EA2C2;
+      --text: #E2EAF2;
+      --text-2: #9EB3C8;
+      --text-muted: #617A92;
+      --accent: #5BA8E8;
+      --accent-bg: #102030;
+      --teal: #2DD4BF;
+      --teal-bg: #0B2420;
+      --amber: #FCD34D;
+      --amber-bg: #1C1604;
+      --rose: #FDA4AF;
+      --rose-bg: #1E0A10;
+      --green: #86EFAC;
+      --green-bg: #052010;
+      --violet: #C4B5FD;
+      --violet-bg: #1A1030;
+      --dedicated-col: #60A5FA;
+      --eav-col: #2DD4BF;
+      --yesno-col: #C4B5FD;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0D1520;
+    --surface: #16212E;
+    --surface-2: #1B2A39;
+    --border: #253343;
+    --border-strong: #3A4E62;
+    --navy: #A6BDD4;
+    --navy-mid: #7EA2C2;
+    --text: #E2EAF2;
+    --text-2: #9EB3C8;
+    --text-muted: #617A92;
+    --accent: #5BA8E8;
+    --accent-bg: #102030;
+    --teal: #2DD4BF;
+    --teal-bg: #0B2420;
+    --amber: #FCD34D;
+    --amber-bg: #1C1604;
+    --rose: #FDA4AF;
+    --rose-bg: #1E0A10;
+    --green: #86EFAC;
+    --green-bg: #052010;
+    --violet: #C4B5FD;
+    --violet-bg: #1A1030;
+    --dedicated-col: #60A5FA;
+    --eav-col: #2DD4BF;
+    --yesno-col: #C4B5FD;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 0 64px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  .doc-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    color: #fff;
+    padding: 40px 32px 32px;
+  }
+  .doc-header-inner { max-width: 1080px; margin: 0 auto; }
+  .doc-phase { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55); margin-bottom: 8px; }
+  .doc-title { font-size: 28px; font-weight: 700; line-height: 1.2; margin: 0 0 10px;
+    color: #fff; text-wrap: balance; }
+  .doc-subtitle { font-size: 14px; color: rgba(255,255,255,0.7); margin: 0 0 24px; max-width: 640px; }
+  .doc-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+  .doc-meta-item { font-size: 12px; color: rgba(255,255,255,0.55); }
+  .doc-meta-item strong { color: rgba(255,255,255,0.85); font-weight: 500; }
+
+  /* ── Layout ── */
+  .content { max-width: 1080px; margin: 0 auto; padding: 32px 24px 0; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 28px;
+  }
+  .legend-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted); align-self: center; margin-right: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    letter-spacing: 0.03em;
+  }
+  .chip-dedicated { background: var(--accent-bg); color: var(--dedicated-col); }
+  .chip-eav       { background: var(--teal-bg); color: var(--eav-col); }
+  .chip-yesno     { background: var(--violet-bg); color: var(--yesno-col); }
+  .chip-grid      { background: var(--rose-bg); color: var(--rose); }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip-grid-eav  { background: var(--teal-bg); color: var(--eav-col); }
+  .chip-grid-ded  { background: var(--accent-bg); color: var(--dedicated-col); }
+
+  /* ── Section card ── */
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .section-head {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .section-name { font-size: 17px; font-weight: 700; margin: 0 0 3px; }
+  .section-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .table-badge {
+    font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+    padding: 4px 10px; border-radius: 5px;
+    background: var(--surface-2); border: 1px solid var(--border-strong);
+    color: var(--text-2); white-space: nowrap;
+    align-self: flex-start;
+  }
+
+  /* ── Sub-tables ── */
+  .subsection {
+    border-bottom: 1px solid var(--border);
+  }
+  .subsection:last-child { border-bottom: none; }
+  .subsection-head {
+    padding: 10px 24px 8px;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .subsection-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .subsection-count { font-size: 11px; color: var(--text-muted); }
+
+  table.ftable {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    table-layout: fixed;
+  }
+  table.ftable th {
+    text-align: left; font-weight: 500; font-size: 11px;
+    color: var(--text-muted); padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap; background: var(--surface-2);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  table.ftable td {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.ftable tbody tr:last-child td { border-bottom: none; }
+  table.ftable tbody tr:hover td { background: var(--accent-bg); }
+
+  .col-key { width: 22%; }
+  .col-label { width: 22%; }
+  .col-type { width: 11%; }
+  .col-storage { width: 22%; }
+  .col-req { width: 7%; }
+  .col-notes { width: 16%; }
+
+  .col-qkey { width: 28%; }
+  .col-qlabel { width: 28%; }
+  .col-qtype { width: 11%; }
+  .col-qreq { width: 7%; }
+  .col-qnotes { width: 26%; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; color: var(--accent);
+    background: var(--accent-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  .storage-dedicated {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--dedicated-col);
+    background: var(--accent-bg);
+    padding: 2px 6px; border-radius: 4px;
+    display: inline-block;
+  }
+  .storage-eav {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--eav-col);
+    background: var(--teal-bg);
+    padding: 2px 6px; border-radius: 4px;
+    display: inline-block;
+  }
+  .storage-yesno {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--yesno-col);
+    background: var(--violet-bg);
+    padding: 2px 6px; border-radius: 4px;
+    display: inline-block;
+  }
+
+  /* ── Grid contrast band ── */
+  .grid-band {
+    background: var(--surface-2);
+    border: 2px dashed var(--border-strong);
+    border-radius: 8px; padding: 4px; margin: 4px 0;
+  }
+  .grid-explain {
+    font-size: 12.5px; color: var(--text-2);
+    padding: 10px 18px 2px;
+    line-height: 1.6;
+  }
+  .grid-explain strong { color: var(--text); }
+  .grid-row-key {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    background: var(--rose-bg); color: var(--rose);
+    padding: 2px 6px; border-radius: 4px;
+    display: inline-block;
+  }
+  .grid-type-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 4px;
+    white-space: nowrap;
+  }
+  .grid-type-eav { background: var(--teal-bg); color: var(--eav-col); }
+  .grid-type-ded { background: var(--accent-bg); color: var(--dedicated-col); }
+
+  .req-yes { color: var(--rose); font-weight: 600; }
+  .req-no  { color: var(--text-muted); }
+
+  .cond-rule {
+    font-size: 11.5px; color: var(--amber); line-height: 1.5;
+  }
+  .cond-rule strong { font-weight: 600; }
+
+  .options { font-size: 12px; color: var(--text-2); line-height: 1.7; }
+  .options-yesno { font-size: 12px; color: var(--violet); font-weight: 500; }
+
+  .type-tag {
+    display: inline-block; font-size: 11px; font-weight: 500;
+    padding: 1px 7px; border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-2); background: var(--surface-2);
+    white-space: nowrap;
+  }
+
+  /* table overflow wrapper */
+  .table-wrap { overflow-x: auto; }
+
+  /* ── Validation note box ── */
+  .val-box {
+    margin: 0 24px 20px;
+    padding: 12px 16px;
+    background: var(--amber-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: var(--radius);
+    font-size: 12.5px; color: var(--text-2);
+  }
+  .val-box strong { color: var(--amber); }
+
+  /* ── Summary strip ── */
+  .summary-strip {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    padding: 12px 24px;
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+  }
+  .stat { font-size: 12px; color: var(--text-muted); }
+  .stat strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  /* ── Footer ── */
+  .doc-footer {
+    max-width: 1080px; margin: 32px auto 0; padding: 0 24px;
+    font-size: 12px; color: var(--text-muted);
+    border-top: 1px solid var(--border); padding-top: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .doc-header { padding: 28px 16px 24px; }
+    .content { padding: 20px 16px 0; }
+    .section-head, .subsection-head { padding: 14px 16px 10px; }
+    table.ftable th, table.ftable td { padding: 8px 12px; }
+  }
+</style>
+
+<div class="doc-header">
+  <div class="doc-header-inner">
+    <div class="doc-phase">Phase 7 · Field Design Proposal</div>
+    <h1 class="doc-title">Questionnaire Field Definitions — New Sections</h1>
+    <p class="doc-subtitle">
+      Proposed fields for four new sections: Financial Details, Compliance/AML, Employment &amp; Income, and Property Details.
+      Each section mixes DEDICATED columns on new tables with EAV fields and Yes/No/N-A questions.
+      Review and confirm before metadata is set up in DataInitializer.
+    </p>
+    <div class="doc-meta">
+      <div class="doc-meta-item"><strong>Status:</strong> Pending review</div>
+      <div class="doc-meta-item"><strong>Sections:</strong> 4</div>
+      <div class="doc-meta-item"><strong>New tables:</strong> 4</div>
+      <div class="doc-meta-item"><strong>Author:</strong> ksnatha</div>
+      <div class="doc-meta-item"><strong>Date:</strong> 2026-09-21</div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Legend -->
+  <div class="legend">
+    <span class="legend-title">Storage</span>
+    <span class="chip chip-dedicated"><span class="chip-dot"></span>DEDICATED — real column on a new table</span>
+    <span class="chip chip-eav"><span class="chip-dot"></span>EAV — USER_ANSWERS (field_key / value / row_index)</span>
+    <span class="chip chip-yesno"><span class="chip-dot"></span>Yes/No/N-A — EAV dropdown + conditional comment field</span>
+    <span class="chip chip-grid"><span class="chip-dot"></span>GRID — repeating rows; EAV uses row_index in USER_ANSWERS; DEDICATED uses one DB row per grid row</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       GRID EXAMPLES
+  ════════════════════════════════════════════════ -->
+
+  <!-- Grid Example 1 — EAV grid (already implemented) -->
+  <div class="section-card">
+    <div class="section-head">
+      <div>
+        <div class="section-name" style="display:flex;align-items:center;gap:10px;">
+          Collateral Properties
+          <span class="grid-type-label grid-type-eav">EAV Grid — already implemented</span>
+        </div>
+        <div class="section-id">section-id: associated-records · grid-key: collateral_properties</div>
+      </div>
+      <div class="table-badge">Storage: USER_ANSWERS · row_index</div>
+    </div>
+
+    <div class="grid-explain">
+      <strong>How EAV grids work:</strong> Each row added by the user is identified by a <code>row_index</code> (1, 2, 3 …).
+      Every cell is stored as a separate record in <code>USER_ANSWERS (application_id, field_key, row_index, value)</code>.
+      No dedicated table or JPA entity is needed — the schema is entirely schema-free.
+      The trade-off is that reporting across rows requires pivoting the EAV table.
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-eav"><span class="chip-dot"></span>GRID COLUMNS</span>
+        <span class="subsection-label">5 columns · unlimited rows · row_index ≥ 1</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Column key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">Storage</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Options / Validation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>property_address</code></td>
+              <td>Property Address</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-eav">EAV · row_index</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Free text</td>
+            </tr>
+            <tr>
+              <td><code>property_type</code></td>
+              <td>Property Type</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · row_index</span></td>
+              <td><span class="req-no">No</span></td>
+              <td class="options">CODE_SET: <code>PROPERTY_TYPE</code></td>
+            </tr>
+            <tr>
+              <td><code>estimated_value</code></td>
+              <td>Estimated Value</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV · row_index</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>lien_position</code></td>
+              <td>Lien Position</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · row_index</span></td>
+              <td><span class="req-no">No</span></td>
+              <td class="options">CODE_SET: <code>LIEN_POSITION</code><br><span class="cond-rule"><strong>ROW rule:</strong> required when property_type = COMMERCIAL</span></td>
+            </tr>
+            <tr>
+              <td><code>notes</code></td>
+              <td>Notes</td>
+              <td><span class="type-tag">TEXTAREA</span></td>
+              <td><span class="storage-eav">EAV · row_index</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Free text</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="summary-strip">
+      <span class="stat">Existing section — seeded in DataInitializer</span>
+      <span class="stat"><strong>5</strong> EAV grid columns</span>
+      <span class="stat">Row-scoped validation rule: <code>lien_position</code> required when <code>property_type = COMMERCIAL</code></span>
+      <span class="stat">collateral_count enriched into risk rating by ApplicationService</span>
+    </div>
+  </div>
+
+
+  <!-- Grid Example 2 — DEDICATED grid (new: Guarantors) -->
+  <div class="section-card">
+    <div class="section-head">
+      <div>
+        <div class="section-name" style="display:flex;align-items:center;gap:10px;">
+          Guarantors
+          <span class="grid-type-label grid-type-ded">DEDICATED Grid — new section</span>
+        </div>
+        <div class="section-id">section-id: guarantors · grid-key: guarantors_list</div>
+      </div>
+      <div class="table-badge">New table: loan_guarantor</div>
+    </div>
+
+    <div class="grid-explain">
+      <strong>How DEDICATED grids work:</strong> Each grid row is a full JPA entity row in <code>loan_guarantor</code>
+      linked to the application via <code>application_id</code> FK.
+      The template marks each column with <code>storage: DEDICATED (loan_guarantor.&lt;column&gt;)</code>
+      and includes a <code>gridBackingTable</code> hint so the application-service knows which entity to
+      create/update/delete when the user adds or removes a row.
+      Advantage over EAV: reporting, indexing, and FK constraints work naturally on the dedicated table.
+      Use when each row is a first-class domain object (a guarantor, a director, a fee line).
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-dedicated"><span class="chip-dot"></span>GRID COLUMNS</span>
+        <span class="subsection-label">loan_guarantor table · one DB row per grid row · FK: application_id</span>
+        <span class="subsection-count">6 columns</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Column key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">DB column</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Options / Validation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>guarantor_name</code></td>
+              <td>Full Name</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_guarantor.guarantor_name</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Max 200 chars</td>
+            </tr>
+            <tr>
+              <td><code>date_of_birth</code></td>
+              <td>Date of Birth</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_guarantor.date_of_birth</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>ISO date yyyy-MM-dd</td>
+            </tr>
+            <tr>
+              <td><code>contact_number</code></td>
+              <td>Contact Number</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_guarantor.contact_number</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Free text; max 30 chars</td>
+            </tr>
+            <tr>
+              <td><code>relationship</code></td>
+              <td>Relationship to Borrower</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-dedicated">loan_guarantor.relationship</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td class="options">CODE_SET: <code>GUARANTOR_RELATIONSHIP</code><br>Spouse · Business Partner · Director · Parent · Other</td>
+            </tr>
+            <tr>
+              <td><code>guaranteed_amount</code></td>
+              <td>Guaranteed Amount</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_guarantor.guaranteed_amount</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Decimal; ≥ 0; ≤ loan_amount</td>
+            </tr>
+            <tr>
+              <td><code>independent_advice</code></td>
+              <td>Independent Legal Advice Obtained?</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-dedicated">loan_guarantor.independent_advice</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td class="options-yesno">YES · NO · PENDING</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="val-box" style="margin: 12px 24px 16px;">
+      <strong>Implementation note — template schema extension needed:</strong>
+      <code>GridDefinition</code> will need a <code>gridBackingTable</code> field (e.g. <code>"loan_guarantor"</code>)
+      and a <code>gridStorageType</code> enum (<code>EAV</code> vs <code>DEDICATED</code>) so the application-service
+      knows whether to write to <code>USER_ANSWERS</code> or to a <code>LoanGuarantor</code> JPA entity.
+      The <code>SecurityValidator</code> that already validates DEDICATED column names at publish time
+      will cover the grid column names as well.
+    </div>
+
+    <div class="summary-strip">
+      <span class="stat">New section — needs DataInitializer seed</span>
+      <span class="stat"><strong>6</strong> DEDICATED grid columns</span>
+      <span class="stat">New JPA entity: <code>LoanGuarantor</code></span>
+      <span class="stat">New CODE_SET: <code>GUARANTOR_RELATIONSHIP</code> in lookup-stub-service</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 1 — FINANCIAL DETAILS
+  ════════════════════════════════════════════════ -->
+  <div class="section-card">
+    <div class="section-head">
+      <div>
+        <div class="section-name">Financial Details</div>
+        <div class="section-id">section-id: financial-details</div>
+      </div>
+      <div class="table-badge">New table: loan_financial_summary</div>
+    </div>
+
+    <!-- DEDICATED -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-dedicated"><span class="chip-dot"></span>DEDICATED</span>
+        <span class="subsection-label">loan_financial_summary columns</span>
+        <span class="subsection-count">4 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">DB column</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Validation / Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>net_worth</code></td>
+              <td>Net Worth</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_financial_summary.net_worth</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>annual_revenue</code></td>
+              <td>Annual Revenue</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_financial_summary.annual_revenue</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>total_liabilities</code></td>
+              <td>Total Liabilities</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_financial_summary.total_liabilities</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>credit_score</code></td>
+              <td>Credit Score</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_financial_summary.credit_score</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Integer 300–900</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EAV -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-eav"><span class="chip-dot"></span>EAV</span>
+        <span class="subsection-label">USER_ANSWERS fields</span>
+        <span class="subsection-count">5 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">Source</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Options / Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>primary_bank</code></td>
+              <td>Primary Bank</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Free text</td>
+            </tr>
+            <tr>
+              <td><code>years_in_business</code></td>
+              <td>Years in Business</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Integer; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>existing_loan_count</code></td>
+              <td>Existing Active Loans</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Integer; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>fiscal_year_end</code></td>
+              <td>Fiscal Year End</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-no">No</span></td>
+              <td class="options">CODE_SET: <code>FISCAL_YEAR_END</code><br>Jan · Feb · Mar · … · Dec</td>
+            </tr>
+            <tr>
+              <td><code>business_structure</code></td>
+              <td>Business Structure</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-no">No</span></td>
+              <td class="options">CODE_SET: <code>BUSINESS_STRUCTURE</code><br>Sole Trader · Partnership · Company · Trust</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- YES/NO/N-A -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-yesno"><span class="chip-dot"></span>Yes / No / N-A</span>
+        <span class="subsection-label">EAV dropdown + conditional comment</span>
+        <span class="subsection-count">3 question pairs</span>
+      </div>
+      <div class="val-box">
+        <strong>Conditional rule (applies to all rows below):</strong>
+        When answer = <strong>NO</strong> → show comment field and mark it REQUIRED (min 5 characters).
+        Comment field key = <code>{question_key}_comment</code>.
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-qkey">Question key</th>
+              <th class="col-qlabel">Question label</th>
+              <th class="col-qtype">Options</th>
+              <th class="col-qreq">Req</th>
+              <th class="col-qnotes">Comment field key &amp; rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>financial_statements_provided</code></td>
+              <td>Have financial statements been provided for the last 2 years?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>
+                <code>financial_statements_provided_comment</code><br>
+                <span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span>
+              </td>
+            </tr>
+            <tr>
+              <td><code>credit_threshold_met</code></td>
+              <td>Does the borrower meet the minimum credit threshold?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>
+                <code>credit_threshold_met_comment</code><br>
+                <span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span>
+              </td>
+            </tr>
+            <tr>
+              <td><code>liabilities_disclosed</code></td>
+              <td>Have all existing liabilities been fully disclosed?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>
+                <code>liabilities_disclosed_comment</code><br>
+                <span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="summary-strip">
+      <span class="stat"><strong>4</strong> DEDICATED fields</span>
+      <span class="stat"><strong>5</strong> EAV fields</span>
+      <span class="stat"><strong>3</strong> Yes/No/N-A questions + <strong>3</strong> conditional comment fields</span>
+      <span class="stat">Total: <strong>15</strong> fields</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 2 — COMPLIANCE / AML
+  ════════════════════════════════════════════════ -->
+  <div class="section-card">
+    <div class="section-head">
+      <div>
+        <div class="section-name">Compliance / AML</div>
+        <div class="section-id">section-id: compliance-aml</div>
+      </div>
+      <div class="table-badge">New table: loan_compliance_record</div>
+    </div>
+
+    <!-- DEDICATED -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-dedicated"><span class="chip-dot"></span>DEDICATED</span>
+        <span class="subsection-label">loan_compliance_record columns</span>
+        <span class="subsection-count">4 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">DB column</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>aml_check_status</code></td>
+              <td>AML Check Status</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_compliance_record.aml_check_status</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>PENDING / PASS / FAIL / REVIEW</td>
+            </tr>
+            <tr>
+              <td><code>aml_check_date</code></td>
+              <td>AML Check Date</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_compliance_record.aml_check_date</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>ISO date string (yyyy-MM-dd)</td>
+            </tr>
+            <tr>
+              <td><code>pep_status</code></td>
+              <td>PEP Screening Status</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_compliance_record.pep_status</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>CLEAR / HIT / PENDING</td>
+            </tr>
+            <tr>
+              <td><code>sanctions_status</code></td>
+              <td>Sanctions Screening Status</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_compliance_record.sanctions_status</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>CLEAR / HIT / PENDING</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EAV -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-eav"><span class="chip-dot"></span>EAV</span>
+        <span class="subsection-label">USER_ANSWERS fields</span>
+        <span class="subsection-count">4 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">Source</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Options / Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>country_of_incorporation</code></td>
+              <td>Country of Incorporation</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td class="options">CODE_SET: <code>COUNTRY</code></td>
+            </tr>
+            <tr>
+              <td><code>source_of_funds</code></td>
+              <td>Source of Funds</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td class="options">CODE_SET: <code>SOURCE_OF_FUNDS</code><br>Business Revenue · Investment Returns · Inheritance · Other</td>
+            </tr>
+            <tr>
+              <td><code>years_as_customer</code></td>
+              <td>Years as Customer</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Integer; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>business_type</code></td>
+              <td>Business Type / Industry</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-no">No</span></td>
+              <td class="options">CODE_SET: <code>BUSINESS_TYPE</code><br>Retail · Manufacturing · Professional Services · Construction · Other</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- YES/NO/N-A -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-yesno"><span class="chip-dot"></span>Yes / No / N-A</span>
+        <span class="subsection-label">EAV dropdown + conditional comment</span>
+        <span class="subsection-count">4 question pairs</span>
+      </div>
+      <div class="val-box">
+        <strong>Conditional rule:</strong>
+        Answer = <strong>NO</strong> → show and require comment field (min 5 chars).
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-qkey">Question key</th>
+              <th class="col-qlabel">Question label</th>
+              <th class="col-qtype">Options</th>
+              <th class="col-qreq">Req</th>
+              <th class="col-qnotes">Comment field key &amp; rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>aml_completed</code></td>
+              <td>Has the full AML/KYC process been completed?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>aml_completed_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>pep_screening_done</code></td>
+              <td>Has PEP (Politically Exposed Person) screening been performed?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>pep_screening_done_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>sanctions_clear</code></td>
+              <td>Has the borrower been cleared against all applicable sanctions lists?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>sanctions_clear_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>beneficial_owner_identified</code></td>
+              <td>Have all beneficial owners (≥ 25% ownership) been identified and verified?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>beneficial_owner_identified_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="summary-strip">
+      <span class="stat"><strong>4</strong> DEDICATED fields</span>
+      <span class="stat"><strong>4</strong> EAV fields</span>
+      <span class="stat"><strong>4</strong> Yes/No/N-A questions + <strong>4</strong> conditional comment fields</span>
+      <span class="stat">Total: <strong>16</strong> fields</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 3 — EMPLOYMENT & INCOME
+  ════════════════════════════════════════════════ -->
+  <div class="section-card">
+    <div class="section-head">
+      <div>
+        <div class="section-name">Employment &amp; Income</div>
+        <div class="section-id">section-id: employment-income</div>
+      </div>
+      <div class="table-badge">New table: loan_employment_detail</div>
+    </div>
+
+    <!-- DEDICATED -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-dedicated"><span class="chip-dot"></span>DEDICATED</span>
+        <span class="subsection-label">loan_employment_detail columns</span>
+        <span class="subsection-count">4 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">DB column</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>employment_status</code></td>
+              <td>Employment Status</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_employment_detail.employment_status</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>EMPLOYED · SELF_EMPLOYED · UNEMPLOYED · RETIRED</td>
+            </tr>
+            <tr>
+              <td><code>employer_name</code></td>
+              <td>Employer / Business Name</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_employment_detail.employer_name</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Max 200 chars; conditionally required when employment_status = EMPLOYED</td>
+            </tr>
+            <tr>
+              <td><code>gross_annual_income</code></td>
+              <td>Gross Annual Income</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_employment_detail.gross_annual_income</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>net_monthly_income</code></td>
+              <td>Net Monthly Income</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_employment_detail.net_monthly_income</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EAV -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-eav"><span class="chip-dot"></span>EAV</span>
+        <span class="subsection-label">USER_ANSWERS fields</span>
+        <span class="subsection-count">5 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">Source</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Options / Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>occupation</code></td>
+              <td>Occupation / Role</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Free text; max 100 chars</td>
+            </tr>
+            <tr>
+              <td><code>years_at_current_job</code></td>
+              <td>Years at Current Job</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Integer; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>income_source</code></td>
+              <td>Primary Income Source</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td class="options">CODE_SET: <code>INCOME_SOURCE</code><br>Salary · Business · Investment · Pension · Rental · Other</td>
+            </tr>
+            <tr>
+              <td><code>secondary_income</code></td>
+              <td>Secondary Income (p.a.)</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>tax_return_year</code></td>
+              <td>Most Recent Tax Return Year</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>4-digit year (e.g. 2024)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- YES/NO/N-A -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-yesno"><span class="chip-dot"></span>Yes / No / N-A</span>
+        <span class="subsection-label">EAV dropdown + conditional comment</span>
+        <span class="subsection-count">3 question pairs</span>
+      </div>
+      <div class="val-box">
+        <strong>Conditional rule:</strong>
+        Answer = <strong>NO</strong> → show and require comment field (min 5 chars).
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-qkey">Question key</th>
+              <th class="col-qlabel">Question label</th>
+              <th class="col-qtype">Options</th>
+              <th class="col-qreq">Req</th>
+              <th class="col-qnotes">Comment field key &amp; rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>income_verified</code></td>
+              <td>Has the borrower's income been independently verified?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>income_verified_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>payslips_provided</code></td>
+              <td>Have the last 3 months' payslips been provided?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>payslips_provided_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>tax_returns_provided</code></td>
+              <td>Have the last 2 years' tax returns been provided?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>tax_returns_provided_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="summary-strip">
+      <span class="stat"><strong>4</strong> DEDICATED fields</span>
+      <span class="stat"><strong>5</strong> EAV fields</span>
+      <span class="stat"><strong>3</strong> Yes/No/N-A questions + <strong>3</strong> conditional comment fields</span>
+      <span class="stat">Total: <strong>15</strong> fields</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 4 — PROPERTY DETAILS
+  ════════════════════════════════════════════════ -->
+  <div class="section-card">
+    <div class="section-head">
+      <div>
+        <div class="section-name">Property Details</div>
+        <div class="section-id">section-id: property-details</div>
+      </div>
+      <div class="table-badge">New table: loan_property_info</div>
+    </div>
+
+    <!-- DEDICATED -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-dedicated"><span class="chip-dot"></span>DEDICATED</span>
+        <span class="subsection-label">loan_property_info columns</span>
+        <span class="subsection-count">5 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">DB column</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>property_address_full</code></td>
+              <td>Full Property Address</td>
+              <td><span class="type-tag">TEXTAREA</span></td>
+              <td><span class="storage-dedicated">loan_property_info.property_address_full</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Max 500 chars</td>
+            </tr>
+            <tr>
+              <td><code>property_state</code></td>
+              <td>State / Territory</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_property_info.property_state</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Max 50 chars</td>
+            </tr>
+            <tr>
+              <td><code>property_postcode</code></td>
+              <td>Postcode</td>
+              <td><span class="type-tag">TEXT</span></td>
+              <td><span class="storage-dedicated">loan_property_info.property_postcode</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>4-digit AU postcode</td>
+            </tr>
+            <tr>
+              <td><code>property_purchase_price</code></td>
+              <td>Purchase Price</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_property_info.property_purchase_price</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>property_valuation</code></td>
+              <td>Independent Valuation Amount</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-dedicated">loan_property_info.property_valuation</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Decimal; ≥ 0; populated after valuation completed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EAV -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-eav"><span class="chip-dot"></span>EAV</span>
+        <span class="subsection-label">USER_ANSWERS fields</span>
+        <span class="subsection-count">6 fields</span>
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-key">Field key</th>
+              <th class="col-label">Display label</th>
+              <th class="col-type">Type</th>
+              <th class="col-storage">Source</th>
+              <th class="col-req">Req</th>
+              <th class="col-notes">Options / Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>property_usage</code></td>
+              <td>Intended Property Usage</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td class="options">CODE_SET: <code>PROPERTY_USAGE</code><br>Owner Occupied · Investment · Commercial · Vacant Land</td>
+            </tr>
+            <tr>
+              <td><code>property_zoning</code></td>
+              <td>Zoning Classification</td>
+              <td><span class="type-tag">DROPDOWN</span></td>
+              <td><span class="storage-eav">EAV · CODE_SET</span></td>
+              <td><span class="req-no">No</span></td>
+              <td class="options">CODE_SET: <code>ZONING_TYPE</code><br>Residential · Commercial · Industrial · Rural · Mixed Use</td>
+            </tr>
+            <tr>
+              <td><code>property_age_years</code></td>
+              <td>Approximate Property Age (years)</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Integer; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>land_area_sqm</code></td>
+              <td>Land Area (m²)</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>floor_area_sqm</code></td>
+              <td>Floor Area (m²)</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Decimal; ≥ 0</td>
+            </tr>
+            <tr>
+              <td><code>number_of_bedrooms</code></td>
+              <td>Number of Bedrooms</td>
+              <td><span class="type-tag">NUMBER</span></td>
+              <td><span class="storage-eav">EAV</span></td>
+              <td><span class="req-no">No</span></td>
+              <td>Integer; 0–20; not applicable for commercial</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- YES/NO/N-A -->
+    <div class="subsection">
+      <div class="subsection-head">
+        <span class="chip chip-yesno"><span class="chip-dot"></span>Yes / No / N-A</span>
+        <span class="subsection-label">EAV dropdown + conditional comment</span>
+        <span class="subsection-count">4 question pairs</span>
+      </div>
+      <div class="val-box">
+        <strong>Conditional rule:</strong>
+        Answer = <strong>NO</strong> → show and require comment field (min 5 chars).
+      </div>
+      <div class="table-wrap">
+        <table class="ftable">
+          <thead>
+            <tr>
+              <th class="col-qkey">Question key</th>
+              <th class="col-qlabel">Question label</th>
+              <th class="col-qtype">Options</th>
+              <th class="col-qreq">Req</th>
+              <th class="col-qnotes">Comment field key &amp; rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>valuation_completed</code></td>
+              <td>Has an independent valuation been completed?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>valuation_completed_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>title_search_done</code></td>
+              <td>Has a title search been conducted to confirm clear ownership?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>title_search_done_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>building_inspection_done</code></td>
+              <td>Has a building and pest inspection been completed?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>building_inspection_done_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+            <tr>
+              <td><code>flood_zone_checked</code></td>
+              <td>Has the property been checked for flood zone classification?</td>
+              <td><span class="options-yesno">YES · NO · N-A</span></td>
+              <td><span class="req-yes">Yes</span></td>
+              <td><code>flood_zone_checked_comment</code><br><span class="cond-rule"><strong>If NO:</strong> required, min 5 chars</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="summary-strip">
+      <span class="stat"><strong>5</strong> DEDICATED fields</span>
+      <span class="stat"><strong>6</strong> EAV fields</span>
+      <span class="stat"><strong>4</strong> Yes/No/N-A questions + <strong>4</strong> conditional comment fields</span>
+      <span class="stat">Total: <strong>19</strong> fields</span>
+    </div>
+  </div>
+
+  <!-- ── Grand totals ── -->
+  <div class="section-card" style="background: var(--surface-2);">
+    <div class="section-head" style="border-bottom: none; padding-bottom: 18px;">
+      <div>
+        <div class="section-name" style="font-size: 15px;">Grand Total — All Sections</div>
+        <div class="section-id">excluding Legal Entity (handled separately)</div>
+      </div>
+    </div>
+    <div class="summary-strip" style="border-top: 1px solid var(--border); padding-top: 14px; padding-bottom: 14px;">
+      <span class="stat"><strong>17</strong> DEDICATED fields (flat) across 4 new tables</span>
+      <span class="stat"><strong>6</strong> DEDICATED grid columns (Guarantors)</span>
+      <span class="stat"><strong>20</strong> EAV fields (flat)</span>
+      <span class="stat"><strong>5</strong> EAV grid columns (Collateral Properties — existing)</span>
+      <span class="stat"><strong>14</strong> Yes/No/N-A questions + <strong>14</strong> conditional comments</span>
+      <span class="stat" style="font-weight: 600; color: var(--text);">Total new fields: <strong style="font-variant-numeric: tabular-nums;">71</strong></span>
+    </div>
+  </div>
+
+  <!-- ── New tables summary ── -->
+  <div class="section-card" style="margin-bottom: 32px;">
+    <div class="section-head">
+      <div>
+        <div class="section-name" style="font-size: 15px;">Proposed New Database Tables</div>
+        <div class="section-id">all linked to loan_application via application_id FK</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="ftable">
+        <thead>
+          <tr>
+            <th style="width:28%">Table name</th>
+            <th style="width:22%">Section</th>
+            <th style="width:10%">Usage</th>
+            <th style="width:40%">Key columns</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>loan_guarantor</code></td>
+            <td>Guarantors</td>
+            <td><span class="grid-type-label grid-type-ded" style="font-size:10px;">GRID</span></td>
+            <td><code>guarantor_name</code>, <code>date_of_birth</code>, <code>relationship</code>, <code>guaranteed_amount</code>, <code>independent_advice</code></td>
+          </tr>
+          <tr>
+            <td><code>loan_financial_summary</code></td>
+            <td>Financial Details</td>
+            <td><span class="type-tag" style="font-size:10px;">FLAT</span></td>
+            <td><code>net_worth</code>, <code>annual_revenue</code>, <code>total_liabilities</code>, <code>credit_score</code></td>
+          </tr>
+          <tr>
+            <td><code>loan_compliance_record</code></td>
+            <td>Compliance / AML</td>
+            <td><span class="type-tag" style="font-size:10px;">FLAT</span></td>
+            <td><code>aml_check_status</code>, <code>aml_check_date</code>, <code>pep_status</code>, <code>sanctions_status</code></td>
+          </tr>
+          <tr>
+            <td><code>loan_employment_detail</code></td>
+            <td>Employment &amp; Income</td>
+            <td><span class="type-tag" style="font-size:10px;">FLAT</span></td>
+            <td><code>employment_status</code>, <code>employer_name</code>, <code>gross_annual_income</code>, <code>net_monthly_income</code></td>
+          </tr>
+          <tr>
+            <td><code>loan_property_info</code></td>
+            <td>Property Details</td>
+            <td><span class="type-tag" style="font-size:10px;">FLAT</span></td>
+            <td><code>property_address_full</code>, <code>property_state</code>, <code>property_postcode</code>, <code>property_purchase_price</code>, <code>property_valuation</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <strong>Next step:</strong> Review and confirm the fields above. Once approved, metadata will be set up in
+    <code>DataInitializer.java</code>, JPA entities and repositories added for each new table, and the four sections
+    seeded with templates including all visibility/validation rules for the conditional comment fields.
+  </div>
+
+</div>
