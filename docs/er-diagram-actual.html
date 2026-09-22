@@ -1,0 +1,630 @@
+<title>Loan Questionnaire ER Diagram</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --c-qs:     #a78bfa;
+  --c-qs-bg:  #1e1235;
+  --c-ver:    #fb923c;
+  --c-ver-bg: #1f1208;
+  --c-core:   #60a5fa;
+  --c-core-bg:#0b1f3a;
+  --c-eav:    #34d399;
+  --c-eav-bg: #052e16;
+  --c-ded:    #22d3ee;
+  --c-ded-bg: #082030;
+  --c-ref:    #fbbf24;
+  --c-ref-bg: #1c1408;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:       #f1f5f9;
+    --surface:  #ffffff;
+    --border:   #e2e8f0;
+    --text:     #0f172a;
+    --muted:    #64748b;
+    --c-qs:     #7c3aed;
+    --c-qs-bg:  #f5f0ff;
+    --c-ver:    #c2410c;
+    --c-ver-bg: #fff7ed;
+    --c-core:   #1d4ed8;
+    --c-core-bg:#eff6ff;
+    --c-eav:    #059669;
+    --c-eav-bg: #ecfdf5;
+    --c-ded:    #0e7490;
+    --c-ded-bg: #ecfeff;
+    --c-ref:    #92400e;
+    --c-ref-bg: #fffbeb;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;
+  --c-qs:#a78bfa;--c-qs-bg:#1e1235;--c-ver:#fb923c;--c-ver-bg:#1f1208;
+  --c-core:#60a5fa;--c-core-bg:#0b1f3a;--c-eav:#34d399;--c-eav-bg:#052e16;
+  --c-ded:#22d3ee;--c-ded-bg:#082030;--c-ref:#fbbf24;--c-ref-bg:#1c1408;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 20px 20px 40px;
+  min-height: 100%;
+}
+
+.page-head {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+h1 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 3px 9px 3px 6px;
+  border-radius: 99px;
+  font-weight: 500;
+  border: 1px solid;
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.canvas-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.canvas {
+  position: relative;
+  width: 1380px;
+  height: 960px;
+  overflow: visible;
+}
+
+#er-svg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ── Table cards ─────────────────────────────────────────────────── */
+.ert {
+  position: absolute;
+  width: 195px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.35);
+  font-size: 11.5px;
+}
+
+.ert-head {
+  padding: 6px 9px 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ert-head span {
+  font-size: 9.5px;
+  opacity: .7;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.ert-cols {
+  background: var(--surface);
+  border: 1.5px solid;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+
+.col {
+  display: flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-bottom: 1px solid var(--border);
+  gap: 4px;
+}
+.col:last-child { border-bottom: none; }
+.col-name {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.col-type {
+  font-size: 9.5px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+.badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+.pk { background: #fef3c7; color: #78350f; }
+.fk { background: #dbeafe; color: #1e3a8a; }
+.sp { opacity: 0; }
+
+/* group color overrides */
+.g-qs  .ert-head { background: var(--c-qs);  color: #fff; }
+.g-qs  .ert-cols { border-color: var(--c-qs); }
+.g-ver .ert-head { background: var(--c-ver); color: #fff; }
+.g-ver .ert-cols { border-color: var(--c-ver); }
+.g-core .ert-head { background: var(--c-core); color: #fff; }
+.g-core .ert-cols { border-color: var(--c-core); }
+.g-eav .ert-head { background: var(--c-eav); color: #fff; }
+.g-eav .ert-cols { border-color: var(--c-eav); }
+.g-ded .ert-head { background: var(--c-ded); color: #fff; }
+.g-ded .ert-cols { border-color: var(--c-ded); }
+.g-ref .ert-head { background: var(--c-ref); color: #fff; }
+.g-ref .ert-cols { border-color: var(--c-ref); }
+
+/* light theme badge adjustment */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .g-qs .ert-head,
+  :root:not([data-theme="dark"]) .g-ver .ert-head,
+  :root:not([data-theme="dark"]) .g-core .ert-head,
+  :root:not([data-theme="dark"]) .g-eav .ert-head,
+  :root:not([data-theme="dark"]) .g-ded .ert-head,
+  :root:not([data-theme="dark"]) .g-ref .ert-head { color: #fff; }
+}
+
+.notes {
+  margin-top: 18px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.notes strong { color: var(--text); }
+.notes ul { padding-left: 18px; margin-top: 4px; }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>Loan Questionnaire — ER Diagram</h1>
+    <p class="subtitle">Actual H2 schema · Phase 7 complete · dashed lines = logical cross-service references (no DB FK)</p>
+  </div>
+  <div class="legend">
+    <div class="legend-chip" style="border-color:var(--c-qs);color:var(--c-qs);background:var(--c-qs-bg)">
+      <div class="legend-dot" style="background:var(--c-qs)"></div>questionnaire-service
+    </div>
+    <div class="legend-chip" style="border-color:var(--c-ver);color:var(--c-ver);background:var(--c-ver-bg)">
+      <div class="legend-dot" style="background:var(--c-ver)"></div>Config / Versioning
+    </div>
+    <div class="legend-chip" style="border-color:var(--c-core);color:var(--c-core);background:var(--c-core-bg)">
+      <div class="legend-dot" style="background:var(--c-core)"></div>Loan Core
+    </div>
+    <div class="legend-chip" style="border-color:var(--c-eav);color:var(--c-eav);background:var(--c-eav-bg)">
+      <div class="legend-dot" style="background:var(--c-eav)"></div>EAV Answers
+    </div>
+    <div class="legend-chip" style="border-color:var(--c-ded);color:var(--c-ded);background:var(--c-ded-bg)">
+      <div class="legend-dot" style="background:var(--c-ded)"></div>DEDICATED Extensions
+    </div>
+    <div class="legend-chip" style="border-color:var(--c-ref);color:var(--c-ref);background:var(--c-ref-bg)">
+      <div class="legend-dot" style="background:var(--c-ref)"></div>lookup-stub-service
+    </div>
+  </div>
+</div>
+
+<div class="canvas-wrap">
+  <div class="canvas" id="canvas">
+    <svg id="er-svg"></svg>
+
+    <!-- ── questionnaire-service ──────────────────────── -->
+    <div class="ert g-qs" id="t-tab" style="left:40px;top:88px">
+      <div class="ert-head">tab_template<span>questionnaire-service · :8082</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">tab_id</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">label_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">template_json</span><span class="col-type">clob</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-qs" id="t-section" style="left:265px;top:88px">
+      <div class="ert-head">section_template<span>questionnaire-service · :8082</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">section_id</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">label_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">has_grid</span><span class="col-type">boolean</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">dedicated_col_refs</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">template_json</span><span class="col-type">clob</span></div>
+      </div>
+    </div>
+
+    <!-- ── Config / Versioning (application-service) ─── -->
+    <div class="ert g-ver" id="t-snap" style="left:600px;top:88px">
+      <div class="ert-head">config_snapshot<span>application-service · :8083</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">snapshot_code</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_start</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_end</span><span class="col-type">date</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-ver" id="t-item" style="left:825px;top:88px">
+      <div class="ert-head">config_snapshot_item<span>application-service · :8083</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">snapshot_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version_type</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version_value</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">strategy_bean_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">entity_id</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <!-- ── Reference Data (lookup-stub-service) ────────── -->
+    <div class="ert g-ref" id="t-code" style="left:1155px;top:88px">
+      <div class="ert-head">code_set<span>lookup-stub-service · :8081</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">code_set_type</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">code</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">label</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">start_date</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">end_date</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">active_ind</span><span class="col-type">varchar(1)</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">display_order</span><span class="col-type">int</span></div>
+      </div>
+    </div>
+
+    <!-- ── Loan Core (application-service) ─────────────── -->
+    <div class="ert g-core" id="t-party" style="left:40px;top:395px">
+      <div class="ert-head">loan_party<span>application-service · :8083</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">application_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">role</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">first_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">last_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">date_of_birth</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">email</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-core" id="t-app" style="left:270px;top:375px">
+      <div class="ert-head">loan_application<span>application-service · :8083</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">human_readable_id</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">config_snapshot_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">risk_rating</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">risk_rating_computed_date</span><span class="col-type">datetime</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">created_date</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">created_user</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">proposal_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">loan_amount</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">proposal_description</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <!-- ── EAV Answers ───────────────────────────────────── -->
+    <div class="ert g-eav" id="t-answers" style="left:810px;top:385px">
+      <div class="ert-head">user_answers<span>application-service · :8083</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">application_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">field_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">row_index</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">answer_value</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <!-- ── Counter ───────────────────────────────────────── -->
+    <div class="ert g-core" id="t-counter" style="left:1060px;top:395px">
+      <div class="ert-head">application_number_counter<span>application-service · :8083</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">counter_year</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">last_value</span><span class="col-type">bigint</span></div>
+      </div>
+    </div>
+
+    <!-- ── DEDICATED Extensions (application-service) ──── -->
+    <div class="ert g-ded" id="t-fin" style="left:40px;top:710px">
+      <div class="ert-head">loan_financial_summary<span>DEDICATED · 1:1 with loan_application</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">application_id</span><span class="col-type">bigint UQ</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">net_worth</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">annual_revenue</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">total_liabilities</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">credit_score</span><span class="col-type">int</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-ded" id="t-comp" style="left:265px;top:710px">
+      <div class="ert-head">loan_compliance_record<span>DEDICATED · 1:1 with loan_application</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">application_id</span><span class="col-type">bigint UQ</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">aml_check_status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">aml_check_date</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">pep_status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">sanctions_status</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-ded" id="t-emp" style="left:490px;top:710px">
+      <div class="ert-head">loan_employment_detail<span>DEDICATED · 1:1 with loan_application</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">application_id</span><span class="col-type">bigint UQ</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">employment_status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">employer_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">gross_annual_income</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">net_monthly_income</span><span class="col-type">decimal</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-ded" id="t-prop" style="left:715px;top:710px">
+      <div class="ert-head">loan_property_info<span>DEDICATED · 1:1 with loan_application</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">application_id</span><span class="col-type">bigint UQ</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">property_address_full</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">property_state</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">property_postcode</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">property_purchase_price</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">property_valuation</span><span class="col-type">decimal</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-ded" id="t-guar" style="left:940px;top:710px">
+      <div class="ert-head">loan_guarantor<span>DEDICATED GRID · 1:N with loan_application</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">application_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">sort_order</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">guarantor_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">date_of_birth</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">contact_number</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">relationship</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">guaranteed_amount</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">independent_advice</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+  </div><!-- /canvas -->
+</div><!-- /canvas-wrap -->
+
+<div class="notes">
+  <strong>Diverges from architecture doc ERD:</strong>
+  <ul>
+    <li><strong>TAB_TEMPLATE_SECTION</strong> — not a physical table; tab-to-section refs are stored as JSON inside <code>tab_template.template_json</code> (each ref carries both <code>section_id</code> and <code>version</code>, per Decision 5).</li>
+    <li><strong>LABEL_TRANSLATION</strong> — not implemented in POC; label keys exist in templates but the translation lookup table was not created.</li>
+    <li><strong>loan_party</strong> — doc showed <code>party_role</code>, <code>annual_income</code>, <code>employment_status</code>, <code>credit_score</code>; actual H2 uses <code>role</code>, and financial/employment fields moved to dedicated Phase 7 tables and EAV.</li>
+    <li><strong>user_answers</strong> — doc used <code>submission_id</code> / <code>raw_value</code>; actual H2 uses <code>application_id</code> / <code>answer_value</code>.</li>
+    <li><strong>Phase 7 DEDICATED tables</strong> (loan_financial_summary, loan_compliance_record, loan_employment_detail, loan_property_info, loan_guarantor) — added in Phase 7, not in original doc ERD.</li>
+  </ul>
+</div>
+
+<script>
+(function () {
+  function draw() {
+    const svg = document.getElementById('er-svg');
+    const canvas = document.getElementById('canvas');
+    const cr = canvas.getBoundingClientRect();
+
+    function b(id) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        l: r.left - cr.left, t: r.top - cr.top,
+        r: r.right - cr.left, b: r.bottom - cr.top,
+        cx: (r.left + r.right) / 2 - cr.left,
+        cy: (r.top + r.bottom) / 2 - cr.top,
+      };
+    }
+
+    // Define SVG markers
+    svg.innerHTML = `<defs>
+      ${['blue','orange','teal','purple','amber','gray'].map(n => {
+        const cols = {blue:'#60a5fa',orange:'#fb923c',teal:'#22d3ee',purple:'#a78bfa',amber:'#fbbf24',gray:'#8b949e'};
+        return `<marker id="arr-${n}" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <polygon points="0 0, 7 3.5, 0 7" fill="${cols[n]}" opacity="0.85"/>
+        </marker>`;
+      }).join('')}
+      <marker id="arr-cross-qs" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <polygon points="0 0, 7 3.5, 0 7" fill="#a78bfa" opacity="0.7"/>
+      </marker>
+    </defs>`;
+
+    function addPath(d, stroke, dashed, marker, width) {
+      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d', d);
+      p.setAttribute('stroke', stroke);
+      p.setAttribute('stroke-width', width || '1.5');
+      p.setAttribute('fill', 'none');
+      p.setAttribute('opacity', dashed ? '0.55' : '0.75');
+      if (dashed) p.setAttribute('stroke-dasharray', '5,3');
+      if (marker) p.setAttribute('marker-end', `url(#${marker})`);
+      svg.appendChild(p);
+    }
+
+    function hbez(x1, y1, x2, y2) {
+      const mx = (x1 + x2) / 2;
+      return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    }
+    function vbez(x1, y1, x2, y2) {
+      const my = (y1 + y2) / 2;
+      return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+    }
+
+    const boxes = {};
+    ['t-tab','t-section','t-snap','t-item','t-code',
+     't-party','t-app','t-answers','t-counter',
+     't-fin','t-comp','t-emp','t-prop','t-guar']
+      .forEach(id => { boxes[id] = b(id); });
+
+    const T = boxes;
+
+    // ── Zone background rects ────────────────────────────────────────
+    function rect(x,y,w,h,fill,rx) {
+      const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      r.setAttribute('x',x); r.setAttribute('y',y);
+      r.setAttribute('width',w); r.setAttribute('height',h);
+      r.setAttribute('fill',fill); r.setAttribute('rx',rx||8);
+      r.setAttribute('opacity','0.08');
+      svg.insertBefore(r, svg.firstChild);
+    }
+    function zoneLabel(x, y, txt, fill) {
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',x); t.setAttribute('y',y);
+      t.setAttribute('fill',fill);
+      t.setAttribute('font-size','9');
+      t.setAttribute('font-family','Inter,sans-serif');
+      t.setAttribute('font-weight','600');
+      t.setAttribute('letter-spacing','0.08em');
+      t.setAttribute('text-transform','uppercase');
+      t.setAttribute('opacity','0.6');
+      t.textContent = txt.toUpperCase();
+      svg.appendChild(t);
+    }
+
+    if (T['t-tab'] && T['t-section']) {
+      rect(T['t-tab'].l-15, T['t-tab'].t-30, T['t-section'].r-T['t-tab'].l+30, T['t-section'].b-T['t-tab'].t+22, '#a78bfa');
+      zoneLabel(T['t-tab'].l-12, T['t-tab'].t-16, 'questionnaire-service', '#a78bfa');
+    }
+    if (T['t-snap'] && T['t-item']) {
+      rect(T['t-snap'].l-15, T['t-snap'].t-30, T['t-item'].r-T['t-snap'].l+20, T['t-item'].b-T['t-snap'].t+22, '#fb923c');
+      zoneLabel(T['t-snap'].l-12, T['t-snap'].t-16, 'application-service · config', '#fb923c');
+    }
+    if (T['t-code']) {
+      rect(T['t-code'].l-15, T['t-code'].t-30, T['t-code'].r-T['t-code'].l+20, T['t-code'].b-T['t-code'].t+22, '#fbbf24');
+      zoneLabel(T['t-code'].l-12, T['t-code'].t-16, 'lookup-stub-service', '#fbbf24');
+    }
+    if (T['t-party'] && T['t-counter']) {
+      const minL = Math.min(T['t-party'].l, T['t-app'].l);
+      const maxR = Math.max(T['t-counter'].r, T['t-answers'].r);
+      const minT = Math.min(T['t-party'].t, T['t-app'].t) - 28;
+      const maxB = Math.max(T['t-party'].b, T['t-counter'].b) + 15;
+      rect(minL-15, minT, maxR-minL+25, maxB-minT, '#60a5fa');
+      zoneLabel(minL-12, minT+14, 'application-service · loan core & answers', '#60a5fa');
+    }
+    if (T['t-fin'] && T['t-guar']) {
+      rect(T['t-fin'].l-15, T['t-fin'].t-28, T['t-guar'].r-T['t-fin'].l+20, T['t-guar'].b-T['t-fin'].t+18, '#22d3ee');
+      zoneLabel(T['t-fin'].l-12, T['t-fin'].t-14, 'application-service · dedicated extensions (phase 7)', '#22d3ee');
+    }
+
+    // ── config_snapshot ──1──▶ config_snapshot_item ──────────────────
+    addPath(hbez(T['t-snap'].r, T['t-snap'].cy, T['t-item'].l, T['t-item'].cy), '#fb923c', false, 'arr-orange');
+
+    // ── loan_application ──N──▶ config_snapshot (upward FK) ──────────
+    if (T['t-app'] && T['t-snap']) {
+      const x1 = T['t-app'].cx, y1 = T['t-app'].t;
+      const x2 = T['t-snap'].cx, y2 = T['t-snap'].b;
+      addPath(`M${x1},${y1} C${x1},${y1-50} ${x2},${y2+50} ${x2},${y2}`, '#60a5fa', false, 'arr-blue');
+    }
+
+    // ── loan_application ──1──▶ loan_party ───────────────────────────
+    addPath(hbez(T['t-app'].l, T['t-app'].cy, T['t-party'].r, T['t-party'].cy), '#60a5fa', false, 'arr-blue');
+
+    // ── loan_application ──1──▶ user_answers ─────────────────────────
+    addPath(hbez(T['t-app'].r, T['t-app'].cy, T['t-answers'].l, T['t-answers'].cy), '#60a5fa', false, 'arr-blue');
+
+    // ── loan_application ──(uses)──▶ application_number_counter ──────
+    if (T['t-app'] && T['t-counter']) {
+      const x1=T['t-app'].r, y1=T['t-app'].t+18;
+      const x2=T['t-counter'].l, y2=T['t-counter'].cy;
+      addPath(`M${x1},${y1} C${x1+80},${y1} ${x2-80},${y2} ${x2},${y2}`, '#8b949e', true, 'arr-gray');
+    }
+
+    // ── loan_application ──1──▶ DEDICATED tables ─────────────────────
+    const dedIds = ['t-fin','t-comp','t-emp','t-prop','t-guar'];
+    if (T['t-app']) {
+      const ax = T['t-app'].cx, ay = T['t-app'].b;
+      const midY = ay + 35;
+      dedIds.forEach(id => {
+        if (!T[id]) return;
+        const tx = T[id].cx, ty = T[id].t;
+        addPath(`M${ax},${ay} C${ax},${midY} ${tx},${midY} ${tx},${ty}`, '#22d3ee', false, 'arr-teal');
+      });
+    }
+
+    // ── Cross-service: config_snapshot_item ──▶ section_template ─────
+    if (T['t-item'] && T['t-section']) {
+      const x1=T['t-item'].cx-20, y1=T['t-item'].t;
+      const x2=T['t-section'].r, y2=T['t-section'].cy;
+      addPath(`M${x1},${y1} C${x1},${y1-55} ${x2+60},${y1-55} ${x2},${y2}`, '#a78bfa', true, 'arr-cross-qs');
+    }
+
+    // ── Cross-service: config_snapshot_item ──▶ tab_template ─────────
+    if (T['t-item'] && T['t-tab']) {
+      const x1=T['t-item'].cx-40, y1=T['t-item'].t;
+      const x2=T['t-tab'].r, y2=T['t-tab'].cy;
+      addPath(`M${x1},${y1} C${x1},${y1-75} ${x2+60},${y1-75} ${x2},${y2}`, '#a78bfa', true, 'arr-cross-qs');
+    }
+
+    // ── Cross-service: user_answers ──▶ code_set (dropdown values) ───
+    if (T['t-answers'] && T['t-code']) {
+      const x1=T['t-answers'].r, y1=T['t-answers'].cy;
+      const x2=T['t-code'].l, y2=T['t-code'].cy;
+      addPath(hbez(x1,y1,x2,y2), '#fbbf24', true, 'arr-amber');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(draw, 50));
+  } else {
+    setTimeout(draw, 50);
+  }
+})();
+</script>

@@ -1,6 +1,7 @@
 package com.example.questionnaire.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "tab_template",
@@ -28,6 +29,12 @@ public class TabTemplate {
     @Column(name = "template_json", nullable = false)
     private String templateJson;
 
+    @Column(name = "effective_start")
+    private LocalDate effectiveStart;
+
+    @Column(name = "effective_end")
+    private LocalDate effectiveEnd;
+
     public Long getId() { return id; }
     public String getTabId() { return tabId; }
     public void setTabId(String v) { this.tabId = v; }
@@ -39,4 +46,8 @@ public class TabTemplate {
     public void setLabelKey(String v) { this.labelKey = v; }
     public String getTemplateJson() { return templateJson; }
     public void setTemplateJson(String v) { this.templateJson = v; }
+    public LocalDate getEffectiveStart() { return effectiveStart; }
+    public void setEffectiveStart(LocalDate v) { this.effectiveStart = v; }
+    public LocalDate getEffectiveEnd() { return effectiveEnd; }
+    public void setEffectiveEnd(LocalDate v) { this.effectiveEnd = v; }
 }

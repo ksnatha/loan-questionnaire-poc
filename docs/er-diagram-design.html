@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ER Diagram — Architecture Design</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --surface2:  #1c2128;
+  --border:    #30363d;
+  --text:       #e6edf3;
+  --muted:      #8b949e;
+  --c-qs:      #a78bfa;
+  --c-qs-bg:   #1e1235;
+  --c-ver:     #fb923c;
+  --c-ver-bg:  #1f1208;
+  --c-core:    #60a5fa;
+  --c-core-bg: #0b1f3a;
+  --c-eav:     #34d399;
+  --c-eav-bg:  #052e16;
+  --c-ref:     #fbbf24;
+  --c-ref-bg:  #1c1408;
+  --c-ext:     #f472b6;
+  --c-ext-bg:  #2d0f1e;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:#f1f5f9; --surface:#fff; --surface2:#f8fafc; --border:#e2e8f0;
+    --text:#0f172a; --muted:#64748b;
+    --c-qs:#7c3aed; --c-qs-bg:#f5f0ff;
+    --c-ver:#c2410c; --c-ver-bg:#fff7ed;
+    --c-core:#1d4ed8; --c-core-bg:#eff6ff;
+    --c-eav:#059669; --c-eav-bg:#ecfdf5;
+    --c-ref:#92400e; --c-ref-bg:#fffbeb;
+    --c-ext:#be185d; --c-ext-bg:#fdf2f8;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;
+  --text:#e6edf3;--muted:#8b949e;
+  --c-qs:#a78bfa;--c-qs-bg:#1e1235;--c-ver:#fb923c;--c-ver-bg:#1f1208;
+  --c-core:#60a5fa;--c-core-bg:#0b1f3a;--c-eav:#34d399;--c-eav-bg:#052e16;
+  --c-ref:#fbbf24;--c-ref-bg:#1c1408;--c-ext:#f472b6;--c-ext-bg:#2d0f1e;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  padding:20px 20px 48px;
+}
+h1{font-size:20px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:15px;font-weight:600;letter-spacing:-.005em}
+.subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+.page-head{margin-bottom:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px 3px 6px;border-radius:99px;font-weight:500;border:1px solid}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.canvas-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.canvas{position:relative;width:1380px;height:870px;overflow:visible}
+#er-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+/* ── Table cards ── */
+.ert{position:absolute;width:195px;border-radius:6px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.35);font-size:11.5px}
+.ert-head{padding:6px 9px 5px;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:12px;letter-spacing:-.01em;display:flex;flex-direction:column;gap:2px}
+.ert-head span{font-size:9.5px;opacity:.7;font-family:'Inter',sans-serif;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+.ert-cols{background:var(--surface);border:1.5px solid;border-top:none;border-radius:0 0 6px 6px}
+.col{display:flex;align-items:center;padding:3px 7px;border-bottom:1px solid var(--border);gap:4px}
+.col:last-child{border-bottom:none}
+.col-name{flex:1;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.col-type{font-size:9.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.badge{font-size:8.5px;font-weight:700;padding:1px 3px;border-radius:2px;flex-shrink:0;width:20px;text-align:center}
+.pk{background:#fef3c7;color:#78350f}.fk{background:#dbeafe;color:#1e3a8a}.sp{opacity:0}
+.g-qs .ert-head{background:var(--c-qs);color:#fff}.g-qs .ert-cols{border-color:var(--c-qs)}
+.g-ver .ert-head{background:var(--c-ver);color:#fff}.g-ver .ert-cols{border-color:var(--c-ver)}
+.g-core .ert-head{background:var(--c-core);color:#fff}.g-core .ert-cols{border-color:var(--c-core)}
+.g-eav .ert-head{background:var(--c-eav);color:#fff}.g-eav .ert-cols{border-color:var(--c-eav)}
+.g-ref .ert-head{background:var(--c-ref);color:#fff}.g-ref .ert-cols{border-color:var(--c-ref)}
+.g-ext .ert-head{background:var(--c-ext);color:#fff}.g-ext .ert-cols{border-color:var(--c-ext)}
+
+/* ── Sample data section ── */
+.data-section{margin-top:28px}
+.data-section h2{margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.data-section h2::before{content:'';display:inline-block;width:3px;height:16px;border-radius:2px;background:var(--c-ver)}
+.scenario-box{padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12.5px;line-height:1.7;margin-bottom:20px;color:var(--muted)}
+.scenario-box strong{color:var(--text)}
+.data-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(580px,1fr));gap:20px}
+.data-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.data-card-head{padding:8px 14px;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:-.01em;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.data-card-head .dot{width:10px;height:10px}
+.data-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.data-table th{padding:5px 12px;background:var(--surface2);color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;text-align:left;border-bottom:1px solid var(--border)}
+.data-table td{padding:5px 12px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--surface2)}
+.hi{background:rgba(96,165,250,.12);font-weight:600}
+.ver-tag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;font-family:'Inter',sans-serif}
+.v1{background:rgba(167,139,250,.15);color:var(--c-qs)}
+.v2{background:rgba(251,146,60,.15);color:var(--c-ver)}
+.v3{background:rgba(96,165,250,.15);color:var(--c-core)}
+.active-snap{color:#34d399;font-weight:600}
+.retired-snap{color:var(--muted)}
+.changed-cell{color:#fb923c;font-weight:700}
+
+.callout{margin-top:20px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--c-ver);border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:var(--muted)}
+.callout strong{color:var(--text)}
+.callout code{font-family:'JetBrains Mono',monospace;font-size:11px;padding:1px 4px;background:var(--surface2);border-radius:3px;color:var(--c-eav)}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div>
+    <h1>ER Diagram — Architecture Design Schema</h1>
+    <p class="subtitle">As specified in architecture doc &amp; decisions.md · dashed lines = logical cross-service references</p>
+  </div>
+  <div class="legend">
+    <div class="chip" style="border-color:var(--c-qs);color:var(--c-qs);background:var(--c-qs-bg)"><div class="dot" style="background:var(--c-qs)"></div>questionnaire-service</div>
+    <div class="chip" style="border-color:var(--c-ver);color:var(--c-ver);background:var(--c-ver-bg)"><div class="dot" style="background:var(--c-ver)"></div>Config / Versioning</div>
+    <div class="chip" style="border-color:var(--c-core);color:var(--c-core);background:var(--c-core-bg)"><div class="dot" style="background:var(--c-core)"></div>Loan Core</div>
+    <div class="chip" style="border-color:var(--c-eav);color:var(--c-eav);background:var(--c-eav-bg)"><div class="dot" style="background:var(--c-eav)"></div>EAV Answers</div>
+    <div class="chip" style="border-color:var(--c-ref);color:var(--c-ref);background:var(--c-ref-bg)"><div class="dot" style="background:var(--c-ref)"></div>lookup-stub-service</div>
+    <div class="chip" style="border-color:var(--c-ext);color:var(--c-ext);background:var(--c-ext-bg)"><div class="dot" style="background:var(--c-ext)"></div>i18n / External stub</div>
+  </div>
+</div>
+
+<div class="canvas-wrap">
+  <div class="canvas" id="canvas">
+    <svg id="er-svg"></svg>
+
+    <!-- ── questionnaire-service ─────────────────────── -->
+    <div class="ert g-qs" id="t-tab" style="left:40px;top:80px">
+      <div class="ert-head">TAB_TEMPLATE<span>questionnaire-service</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">tab_id</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_start</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_end</span><span class="col-type">date</span></div>
+      </div>
+    </div>
+
+    <!-- TAB_TEMPLATE_SECTION — no section version column (Decision 5) -->
+    <div class="ert g-qs" id="t-tab-sec" style="left:265px;top:80px">
+      <div class="ert-head">TAB_TEMPLATE_SECTION<span>Decision 5 · no section version here</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">tab_template_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">section_id</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">display_order</span><span class="col-type">int</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-qs" id="t-section" style="left:490px;top:80px">
+      <div class="ert-head">SECTION_TEMPLATE<span>questionnaire-service</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">section_id</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">label_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">template_json</span><span class="col-type">clob</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">has_grid</span><span class="col-type">boolean</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">dedicated_col_refs</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_start</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_end</span><span class="col-type">date</span></div>
+      </div>
+    </div>
+
+    <!-- i18n -->
+    <div class="ert g-ext" id="t-i18n" style="left:715px;top:80px">
+      <div class="ert-head">LABEL_TRANSLATION<span>Decision 9 · i18n from day one</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">label_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">locale</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">text</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <!-- ── lookup-stub-service ──────────────────────── -->
+    <div class="ert g-ref" id="t-code" style="left:940px;top:80px">
+      <div class="ert-head">CODE_SET<span>lookup-stub-service · effective-dated</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">type</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">code</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">value</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">start_date</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">end_date</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">active_ind</span><span class="col-type">varchar(1)</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-ext" id="t-ext" style="left:1165px;top:80px">
+      <div class="ert-head">EXTERNAL_LOOKUP_OPTION<span>lookup-stub-service · external stub</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">source_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">option_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">label</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <!-- ── Config / Versioning (application-service) ── -->
+    <div class="ert g-ver" id="t-snap" style="left:490px;top:410px">
+      <div class="ert-head">CONFIG_SNAPSHOT<span>application-service · one ACTIVE at a time</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">snapshot_code</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_start</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">effective_end</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">created_date</span><span class="col-type">datetime</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">created_user</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-ver" id="t-item" style="left:715px;top:410px">
+      <div class="ert-head">CONFIG_SNAPSHOT_ITEM<span>one row per versioned concern</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">snapshot_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version_type</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">version_value</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">strategy_bean_name</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <!-- ── Loan Core ────────────────────────────────── -->
+    <div class="ert g-core" id="t-app" style="left:40px;top:430px">
+      <div class="ert-head">LOAN_APPLICATION<span>application-service</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">human_readable_id</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">proposal_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">loan_amount</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">proposal_description</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">config_snapshot_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">risk_rating</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">risk_rating_computed_date</span><span class="col-type">datetime</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-core" id="t-party" style="left:265px;top:530px">
+      <div class="ert-head">LOAN_PARTY<span>role discriminator · BORROWER / CO_BORROWER</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">loan_application_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">party_role</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">first_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">last_name</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">date_of_birth</span><span class="col-type">date</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">annual_income</span><span class="col-type">decimal</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">employment_status</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">credit_score</span><span class="col-type">int</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-eav" id="t-answers" style="left:265px;top:400px">
+      <div class="ert-head">USER_ANSWERS<span>EAV write model · row_index enables grids</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge fk">FK</span><span class="col-name">submission_id</span><span class="col-type">bigint</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">field_key</span><span class="col-type">varchar</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">row_index</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">raw_value</span><span class="col-type">varchar</span></div>
+      </div>
+    </div>
+
+    <div class="ert g-core" id="t-counter" style="left:40px;top:680px">
+      <div class="ert-head">APPLICATION_NUMBER_COUNTER<span>atomic counter · not an FK relation</span></div>
+      <div class="ert-cols">
+        <div class="col"><span class="badge pk">PK</span><span class="col-name">year</span><span class="col-type">int</span></div>
+        <div class="col"><span class="badge sp"></span><span class="col-name">last_value</span><span class="col-type">int</span></div>
+      </div>
+    </div>
+
+  </div><!-- /canvas -->
+</div>
+
+<!-- ── Sample data section ────────────────────────────────── -->
+<div class="data-section">
+  <h2>Sample Data — Three-publish Versioning Scenario</h2>
+
+  <div class="scenario-box">
+    <strong>The scenario (from sample-data doc):</strong> three publishes happen over time.
+    <strong>V1 → V2:</strong> Additional Information gets a new question — template change only.
+    <strong>V2 → V3:</strong> rating logic upgraded to factor in collateral — business logic change only.
+    Three loans are created at three points, each pinned to whatever snapshot was <code>ACTIVE</code> then.
+    L2026-2 proves independence: it has the <em>new template</em> but the <em>old rating logic</em> — a combination
+    only possible because the two versioned concerns are genuinely independent items in the snapshot.
+  </div>
+
+  <div class="data-grid">
+
+    <!-- CONFIG_SNAPSHOT -->
+    <div class="data-card">
+      <div class="data-card-head"><div class="dot" style="background:var(--c-ver)"></div>CONFIG_SNAPSHOT</div>
+      <table class="data-table">
+        <thead><tr><th>id</th><th>snapshot_code</th><th>status</th><th>effective_start</th><th>effective_end</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="ver-tag v1">V1</span></td><td class="retired-snap">RETIRED</td><td>2026-01-05</td><td>2026-02-14</td></tr>
+          <tr><td>2</td><td><span class="ver-tag v2">V2</span></td><td class="retired-snap">RETIRED</td><td>2026-02-15</td><td>2026-03-09</td></tr>
+          <tr><td>3</td><td><span class="ver-tag v3">V3</span></td><td class="active-snap">ACTIVE</td><td>2026-03-10</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CONFIG_SNAPSHOT_ITEM condensed -->
+    <div class="data-card">
+      <div class="data-card-head"><div class="dot" style="background:var(--c-ver)"></div>CONFIG_SNAPSHOT_ITEM — clone-forward in action</div>
+      <table class="data-table">
+        <thead><tr><th>snap</th><th>version_type</th><th>version_value</th><th>strategy_bean_name</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td colspan="4" style="font-family:'Inter',sans-serif;font-size:10px;color:var(--muted);background:var(--surface2)">V1 — initial publish</td></tr>
+          <tr><td><span class="ver-tag v1">V1</span></td><td>TAB_TEMPLATE</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v1">V1</span></td><td>SECTION_KEY_INFORMATION</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v1">V1</span></td><td>SECTION_ADDITIONAL_INFORMATION</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v1">V1</span></td><td>SECTION_ASSOCIATED_RECORDS</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v1">V1</span></td><td>RATING_LOGIC</td><td>1</td><td>ratingV1</td></tr>
+          <tr class="hi"><td colspan="4" style="font-family:'Inter',sans-serif;font-size:10px;color:var(--muted);background:var(--surface2)">V2 — template change only, one item changes</td></tr>
+          <tr><td><span class="ver-tag v2">V2</span></td><td>TAB_TEMPLATE</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v2">V2</span></td><td>SECTION_KEY_INFORMATION</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v2">V2</span></td><td class="changed-cell">SECTION_ADDITIONAL_INFORMATION</td><td class="changed-cell">2</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v2">V2</span></td><td>SECTION_ASSOCIATED_RECORDS</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v2">V2</span></td><td>RATING_LOGIC</td><td>1</td><td>ratingV1</td></tr>
+          <tr class="hi"><td colspan="4" style="font-family:'Inter',sans-serif;font-size:10px;color:var(--muted);background:var(--surface2)">V3 — business logic change only, one item changes</td></tr>
+          <tr><td><span class="ver-tag v3">V3</span></td><td>TAB_TEMPLATE</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v3">V3</span></td><td>SECTION_KEY_INFORMATION</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v3">V3</span></td><td>SECTION_ADDITIONAL_INFORMATION</td><td>2</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v3">V3</span></td><td>SECTION_ASSOCIATED_RECORDS</td><td>1</td><td>—</td></tr>
+          <tr><td><span class="ver-tag v3">V3</span></td><td class="changed-cell">RATING_LOGIC</td><td class="changed-cell">2</td><td class="changed-cell">ratingV2</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- LOAN_APPLICATION -->
+    <div class="data-card">
+      <div class="data-card-head"><div class="dot" style="background:var(--c-core)"></div>LOAN_APPLICATION — each loan pinned to its snapshot</div>
+      <table class="data-table">
+        <thead><tr><th>id</th><th>human_readable_id</th><th>proposal_name</th><th>config_snapshot_id</th><th>risk_rating</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>L2026-1</td><td>Acme Corp expansion facility</td><td><span class="ver-tag v1">V1</span></td><td>MEDIUM</td></tr>
+          <tr><td>2</td><td>L2026-2</td><td>Bell Manufacturing term loan</td><td><span class="ver-tag v2">V2</span></td><td>LOW</td></tr>
+          <tr><td>3</td><td>L2026-3</td><td>Delta Logistics equipment loan</td><td><span class="ver-tag v3">V3</span></td><td>HIGH</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CODE_SET effective dating -->
+    <div class="data-card">
+      <div class="data-card-head"><div class="dot" style="background:var(--c-ref)"></div>CODE_SET — effective dating, never overwrite</div>
+      <table class="data-table">
+        <thead><tr><th>id</th><th>type</th><th>code</th><th>value</th><th>start_date</th><th>end_date</th><th>active_ind</th></tr></thead>
+        <tbody>
+          <tr style="opacity:.55"><td>1</td><td>LOAN_PURPOSE</td><td>REFI</td><td>Refinance existing debt</td><td>2025-01-01</td><td>2026-02-14</td><td>N</td></tr>
+          <tr><td>2</td><td>LOAN_PURPOSE</td><td>REFI</td><td>Debt refinancing</td><td>2026-02-15</td><td>—</td><td style="color:#34d399;font-weight:600">Y</td></tr>
+          <tr><td>3</td><td>LOAN_PURPOSE</td><td>WORKING_CAPITAL</td><td>Working capital</td><td>2025-01-01</td><td>—</td><td style="color:#34d399;font-weight:600">Y</td></tr>
+          <tr><td>4</td><td>LOAN_PURPOSE</td><td>EQUIPMENT</td><td>Equipment purchase</td><td>2025-01-01</td><td>—</td><td style="color:#34d399;font-weight:600">Y</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <strong>What each loan sees today (V3 is ACTIVE):</strong>
+    <br>• <strong>L2026-1</strong> (pinned V1) — renders Additional Information <code>v1</code> (no new question) · computes via <code>ratingV1</code>. Reopening this DRAFT never picks up later changes.
+    <br>• <strong>L2026-2</strong> (pinned V2) — renders Additional Information <code>v2</code> (has new question) · still computes via <code>ratingV1</code>. Proves the two concerns are independent.
+    <br>• <strong>L2026-3</strong> (pinned V3) — renders Additional Information <code>v2</code> · computes via <code>ratingV2</code>. Created after both changes, gets both.
+    <br><br><strong>CODE_SET effective dating:</strong> L2026-1 selected <code>REFI</code> on 2026-01-05. Re-rendering it today resolves to <em>"Refinance existing debt"</em> (row 1, active on creation date) — not the current label — per Decision 4's default policy.
+  </div>
+
+</div>
+
+<script>
+(function () {
+  function draw() {
+    const svg = document.getElementById('er-svg');
+    const canvas = document.getElementById('canvas');
+    const cr = canvas.getBoundingClientRect();
+    function b(id) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { l:r.left-cr.left, t:r.top-cr.top, r:r.right-cr.left, b:r.bottom-cr.top,
+               cx:(r.left+r.right)/2-cr.left, cy:(r.top+r.bottom)/2-cr.top };
+    }
+    const cols = {blue:'#60a5fa',orange:'#fb923c',purple:'#a78bfa',amber:'#fbbf24',pink:'#f472b6',gray:'#8b949e'};
+    svg.innerHTML = `<defs>${Object.entries(cols).map(([n,c])=>`
+      <marker id="arr-${n}" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <polygon points="0 0, 7 3.5, 0 7" fill="${c}" opacity="0.85"/>
+      </marker>`).join('')}
+    </defs>`;
+
+    function path(d, stroke, dashed, marker, w) {
+      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d',d); p.setAttribute('stroke',stroke);
+      p.setAttribute('stroke-width',w||'1.5'); p.setAttribute('fill','none');
+      p.setAttribute('opacity',dashed?'0.5':'0.75');
+      if (dashed) p.setAttribute('stroke-dasharray','5,3');
+      if (marker) p.setAttribute('marker-end',`url(#arr-${marker})`);
+      svg.appendChild(p);
+    }
+    function rect(x,y,w,h,fill) {
+      const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);
+      r.setAttribute('fill',fill);r.setAttribute('rx','8');r.setAttribute('opacity','0.08');
+      svg.insertBefore(r,svg.firstChild);
+    }
+    function zl(x,y,txt,fill) {
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('fill',fill);
+      t.setAttribute('font-size','9');t.setAttribute('font-family','Inter,sans-serif');
+      t.setAttribute('font-weight','600');t.setAttribute('letter-spacing','0.08em');
+      t.setAttribute('opacity','0.6');t.textContent=txt.toUpperCase();svg.appendChild(t);
+    }
+    function hb(x1,y1,x2,y2){const mx=(x1+x2)/2;return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
+
+    const T = {};
+    ['t-tab','t-tab-sec','t-section','t-i18n','t-code','t-ext',
+     't-snap','t-item','t-app','t-party','t-answers','t-counter']
+      .forEach(id => T[id]=b(id));
+
+    // Zone backgrounds
+    if (T['t-tab']&&T['t-i18n']) {
+      rect(T['t-tab'].l-14, T['t-tab'].t-28, T['t-i18n'].r-T['t-tab'].l+22, T['t-i18n'].b-T['t-tab'].t+18, '#a78bfa');
+      zl(T['t-tab'].l-11, T['t-tab'].t-14, 'questionnaire-service', '#a78bfa');
+    }
+    if (T['t-code']&&T['t-ext']) {
+      rect(T['t-code'].l-14, T['t-code'].t-28, T['t-ext'].r-T['t-code'].l+22, T['t-ext'].b-T['t-code'].t+18, '#fbbf24');
+      zl(T['t-code'].l-11, T['t-code'].t-14, 'lookup-stub-service', '#fbbf24');
+    }
+    if (T['t-snap']&&T['t-item']) {
+      rect(T['t-snap'].l-14, T['t-snap'].t-28, T['t-item'].r-T['t-snap'].l+22, T['t-item'].b-T['t-snap'].t+18, '#fb923c');
+      zl(T['t-snap'].l-11, T['t-snap'].t-14, 'application-service · config', '#fb923c');
+    }
+    if (T['t-app']&&T['t-answers']&&T['t-party']&&T['t-counter']) {
+      const minL=Math.min(T['t-app'].l,T['t-answers'].l)-14;
+      const maxR=Math.max(T['t-app'].r,T['t-party'].r,T['t-answers'].r,T['t-counter'].r)+14;
+      const minT=Math.min(T['t-app'].t,T['t-answers'].t)-28;
+      const maxB=Math.max(T['t-counter'].b,T['t-party'].b)+14;
+      rect(minL, minT, maxR-minL, maxB-minT, '#60a5fa');
+      zl(minL+3, minT+14, 'application-service · loan core & answers', '#60a5fa');
+    }
+
+    // TAB_TEMPLATE → TAB_TEMPLATE_SECTION
+    path(hb(T['t-tab'].r,T['t-tab'].cy,T['t-tab-sec'].l,T['t-tab-sec'].cy),'#a78bfa',false,'purple');
+    // TAB_TEMPLATE_SECTION logically refs SECTION_TEMPLATE (dashed, no FK)
+    path(hb(T['t-tab-sec'].r,T['t-tab-sec'].cy,T['t-section'].l,T['t-section'].cy),'#a78bfa',true,'purple');
+    // SECTION_TEMPLATE refs LABEL_TRANSLATION (dashed, logical)
+    path(hb(T['t-section'].r,T['t-section'].cy,T['t-i18n'].l,T['t-i18n'].cy),'#f472b6',true,'pink');
+
+    // config_snapshot → config_snapshot_item
+    path(hb(T['t-snap'].r,T['t-snap'].cy,T['t-item'].l,T['t-item'].cy),'#fb923c',false,'orange');
+
+    // config_snapshot_item →(cross-svc) SECTION_TEMPLATE
+    if (T['t-item']&&T['t-section']) {
+      const x1=T['t-item'].cx, y1=T['t-item'].t;
+      const x2=T['t-section'].cx, y2=T['t-section'].b;
+      path(`M${x1},${y1} C${x1},${y1-55} ${x2},${y2+55} ${x2},${y2}`,'#a78bfa',true,'purple');
+    }
+    // config_snapshot_item →(cross-svc) TAB_TEMPLATE
+    if (T['t-item']&&T['t-tab']) {
+      const x1=T['t-item'].cx-30, y1=T['t-item'].t;
+      const x2=T['t-tab'].cx, y2=T['t-tab'].b;
+      path(`M${x1},${y1} C${x1},${y1-80} ${x2},${y2+80} ${x2},${y2}`,'#a78bfa',true,'purple');
+    }
+
+    // loan_application → config_snapshot
+    if (T['t-app']&&T['t-snap']) {
+      const x1=T['t-app'].cx, y1=T['t-app'].t;
+      const x2=T['t-snap'].l, y2=T['t-snap'].cy;
+      path(`M${x1},${y1} C${x1},${y1-50} ${x2-60},${y2} ${x2},${y2}`,'#60a5fa',false,'blue');
+    }
+    // loan_application → loan_party
+    path(hb(T['t-app'].r,T['t-app'].b-40,T['t-party'].l,T['t-party'].cy),'#60a5fa',false,'blue');
+    // loan_application → user_answers
+    path(hb(T['t-app'].r,T['t-app'].t+40,T['t-answers'].l,T['t-answers'].cy),'#60a5fa',false,'blue');
+    // user_answers →(cross-svc) code_set
+    if (T['t-answers']&&T['t-code']) {
+      const x1=T['t-answers'].r, y1=T['t-answers'].cy;
+      const x2=T['t-code'].l, y2=T['t-code'].b-30;
+      path(`M${x1},${y1} C${x1+80},${y1} ${x2-80},${y2} ${x2},${y2}`,'#fbbf24',true,'amber');
+    }
+    // loan_application → counter (dashed, not FK)
+    path(hb(T['t-app'].l,T['t-app'].b-20,T['t-counter'].r,T['t-counter'].cy),'#8b949e',true,'gray');
+  }
+  if (document.readyState==='loading') {
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(draw,50));
+  } else { setTimeout(draw,50); }
+})();
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -157,7 +158,16 @@ public class SectionTemplateService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse template for validation", e);
         }
+        // Close out the previous ACTIVE version's effective date range.
+        // Status stays ACTIVE so snapshot-pinned loans can still fetch it by version.
+        repo.findBySectionIdOrderByVersionDesc(sectionId).stream()
+            .filter(s -> s.getStatus() == TemplateStatus.ACTIVE)
+            .forEach(s -> {
+                s.setEffectiveEnd(LocalDate.now().minusDays(1));
+                repo.save(s);
+            });
         st.setStatus(TemplateStatus.ACTIVE);
+        st.setEffectiveStart(LocalDate.now());
         return repo.save(st);
     }
 
