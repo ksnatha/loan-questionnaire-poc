@@ -134,6 +134,26 @@ public class ApplicationService {
         return Collections.unmodifiableMap(m);
     }
 
+    // Throws instead of silently no-opping: a DEDICATED ref that's allowlisted at
+    // template-publish time but missing here means the allowlist and this wiring have
+    // drifted — a bulk-uploaded or hand-authored template can reference it, so a silent
+    // drop is a worse failure mode than a loud one.
+    private BiConsumer<LoanApplication, String> dedicatedWriter(String ref) {
+        BiConsumer<LoanApplication, String> writer = dedicatedWriters.get(ref);
+        if (writer == null) {
+            throw new IllegalStateException("No dedicatedWriters entry for DEDICATED ref: " + ref);
+        }
+        return writer;
+    }
+
+    private Function<LoanApplication, String> dedicatedReader(String ref) {
+        Function<LoanApplication, String> reader = dedicatedReaders.get(ref);
+        if (reader == null) {
+            throw new IllegalStateException("No dedicatedReaders entry for DEDICATED ref: " + ref);
+        }
+        return reader;
+    }
+
     private Map<String, Function<LoanApplication, String>> buildDedicatedReaders() {
         Map<String, Function<LoanApplication, String>> m = new HashMap<>();
 
@@ -290,7 +310,7 @@ public class ApplicationService {
             for (FieldDefinition field : sd.template().fields) {
                 if (field.storage != null && field.storage.type == StorageType.DEDICATED) {
                     String ref = field.storage.tableName + "." + field.storage.columnName;
-                    String value = dedicatedReaders.getOrDefault(ref, a -> null).apply(app);
+                    String value = dedicatedReader(ref).apply(app);
                     if (value != null) answers.put(field.fieldKey, value);
                 } else if (field.storage != null && field.storage.type == StorageType.EAV) {
                     String value = flatEavAnswers.get(field.fieldKey);
@@ -339,7 +359,7 @@ public class ApplicationService {
                 String value = incoming.get(field.fieldKey);
                 if (field.storage != null && field.storage.type == StorageType.DEDICATED) {
                     String ref = field.storage.tableName + "." + field.storage.columnName;
-                    dedicatedWriters.getOrDefault(ref, (a, v) -> {}).accept(app, value);
+                    dedicatedWriter(ref).accept(app, value);
                 } else if (field.storage != null && field.storage.type == StorageType.EAV) {
                     upsertFlatEav(app.getId(), field.fieldKey, value);
                 }
@@ -527,7 +547,7 @@ public class ApplicationService {
                         .ifPresent(userAnswerRepo::delete);
                 } else if (field.storage != null && field.storage.type == StorageType.DEDICATED) {
                     String ref = field.storage.tableName + "." + field.storage.columnName;
-                    dedicatedWriters.getOrDefault(ref, (a, v) -> {}).accept(app, null);
+                    dedicatedWriter(ref).accept(app, null);
                     if (ref.startsWith("loan_application.")) dedicatedDirty = true;
                 }
             }
@@ -542,7 +562,7 @@ public class ApplicationService {
             for (FieldDefinition field : sd.template().fields) {
                 if (field.storage != null && field.storage.type == StorageType.DEDICATED) {
                     String ref = field.storage.tableName + "." + field.storage.columnName;
-                    String value = dedicatedReaders.getOrDefault(ref, a -> null).apply(app);
+                    String value = dedicatedReader(ref).apply(app);
                     if (value != null) map.put(field.fieldKey, value);
                 }
             }

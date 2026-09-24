@@ -2,9 +2,11 @@ package com.example.questionnaire.controller;
 
 import com.example.questionnaire.dto.*;
 import com.example.questionnaire.entity.SectionTemplate;
+import com.example.questionnaire.service.QuestionnaireFieldsBulkUploadService;
 import com.example.questionnaire.service.SectionTemplateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
@@ -12,9 +14,12 @@ import java.util.List;
 public class SectionTemplateController {
 
     private final SectionTemplateService service;
+    private final QuestionnaireFieldsBulkUploadService bulkUploadService;
 
-    public SectionTemplateController(SectionTemplateService service) {
+    public SectionTemplateController(SectionTemplateService service,
+                                      QuestionnaireFieldsBulkUploadService bulkUploadService) {
         this.service = service;
+        this.bulkUploadService = bulkUploadService;
     }
 
     @GetMapping
@@ -57,5 +62,11 @@ public class SectionTemplateController {
                                             @PathVariable Integer version) {
         SectionTemplate st = service.publish(sectionId, version);
         return service.toResponse(st);
+    }
+
+    @PostMapping("/{sectionId}/bulk-upload")
+    public BulkUploadFieldsResponse bulkUpload(@PathVariable String sectionId,
+                                                @RequestParam("file") MultipartFile file) {
+        return bulkUploadService.bulkUpload(sectionId, file);
     }
 }

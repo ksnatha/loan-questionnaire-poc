@@ -14,6 +14,19 @@ async function apiFetch(url, options = {}) {
   return resp.status === 204 ? null : resp.json()
 }
 
+async function apiUploadFile(url, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const resp = await fetch(url, { method: 'POST', body: formData })
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '')
+    let message = text
+    try { message = JSON.parse(text).error ?? text } catch { /* not JSON */ }
+    throw new Error(message || `HTTP ${resp.status}`)
+  }
+  return resp.json()
+}
+
 // questionnaire-service  (proxy: /api → :8082)
 const QS = {
   listSections: () => apiFetch('/api/sections'),
@@ -28,6 +41,8 @@ const QS = {
     }),
   publish: (sectionId, version) =>
     apiFetch(`/api/sections/${sectionId}/versions/${version}/publish`, { method: 'POST' }),
+  bulkUploadFields: (sectionId, file) =>
+    apiUploadFile(`/api/sections/${sectionId}/bulk-upload`, file),
 }
 
 // application-service  (proxy: /app-api → :8083)
@@ -40,20 +55,7 @@ const AS = {
 
 // lookup-stub-service  (proxy: /lookup-api → :8081)
 const LS = {
-  bulkUploadCodeSets: async (file) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    const resp = await fetch('/lookup-api/code-sets/bulk-upload', {
-      method: 'POST', body: formData,
-    })
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => '')
-      let message = text
-      try { message = JSON.parse(text).error ?? text } catch { /* not JSON */ }
-      throw new Error(message || `HTTP ${resp.status}`)
-    }
-    return resp.json()
-  },
+  bulkUploadCodeSets: (file) => apiUploadFile('/lookup-api/code-sets/bulk-upload', file),
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -186,18 +188,24 @@ function SectionEditor({ sectionMeta, onBack }) {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [published, setPublished] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const loadVersion = useCallback(async (version, { markAsDraft } = {}) => {
+    const data = await QS.getSection(sectionMeta.sectionId, version)
+    setFields(fieldsFromTemplate(data.template))
+    setGrids(data.template?.grids ?? [])
+    setLoadedVersion(version)
+    setLoadedLabelKey(data.labelKey)
+    if (markAsDraft) setDraftVersion(version)
+    return data
+  }, [sectionMeta.sectionId])
 
   useEffect(() => {
     async function loadSection() {
       // Load draft if pending, otherwise load active
       const versionToLoad = sectionMeta.draftVersion ?? sectionMeta.activeVersion
       try {
-        const data = await QS.getSection(sectionMeta.sectionId, versionToLoad)
-        setFields(fieldsFromTemplate(data.template))
-        setGrids(data.template?.grids ?? [])
-        setLoadedVersion(versionToLoad)
-        setLoadedLabelKey(data.labelKey)
-        if (sectionMeta.draftVersion) setDraftVersion(sectionMeta.draftVersion)
+        await loadVersion(versionToLoad, { markAsDraft: !!sectionMeta.draftVersion })
       } catch (e) {
         setError('Failed to load section: ' + e.message)
       } finally {
@@ -205,7 +213,28 @@ function SectionEditor({ sectionMeta, onBack }) {
       }
     }
     loadSection()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionMeta])
+
+  async function handleBulkUploadFields(file) {
+    const confirmed = window.confirm(
+      'This replaces all fields and grids in the current draft with the file\'s contents. Continue?'
+    )
+    if (!confirmed) return
+
+    setUploading(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const resp = await QS.bulkUploadFields(sectionMeta.sectionId, file)
+      await loadVersion(resp.draftVersion, { markAsDraft: true })
+      setSuccess(`Draft v${resp.draftVersion} loaded from upload — ${resp.fieldCount} field(s), ${resp.gridCount} grid(s).`)
+    } catch (e) {
+      setError('Bulk upload failed: ' + e.message)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   function updateField(index, key, value) {
     setFields(prev => prev.map((f, i) => {
@@ -341,6 +370,27 @@ function SectionEditor({ sectionMeta, onBack }) {
 
       {success && <div className="msg-success">{success}</div>}
       {error && <div className="msg-error">{error}</div>}
+
+      {!isReadOnly && (
+        <div className="card" style={{ padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <label className="btn btn-sm" style={{ margin: 0 }}>
+            {uploading ? 'Uploading…' : 'Upload fields (CSV/XLSX)'}
+            <input
+              type="file"
+              accept=".csv,.xlsx"
+              disabled={uploading}
+              style={{ display: 'none' }}
+              onChange={e => {
+                const f = e.target.files?.[0]
+                e.target.value = '' // allow re-selecting the same file next time
+                if (f) handleBulkUploadFields(f)
+              }}
+            />
+          </label>
+          <a href="/questionnaire-fields-template.csv" download style={{ fontSize: 12 }}>Field template</a>
+          <a href="/questionnaire-fields-grid-template.csv" download style={{ fontSize: 12 }}>Grid template</a>
+        </div>
+      )}
 
       <div className="editor-card">
         <div className="editor-card-header">

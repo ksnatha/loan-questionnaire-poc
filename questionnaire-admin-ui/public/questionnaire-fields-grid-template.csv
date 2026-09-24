@@ -1,0 +1,2 @@
+row_type,grid_key,grid_label_key,grid_storage_type,grid_backing_table,field_key,label_key,field_type,storage_type,dedicated_table,dedicated_column,required,display_order
+GRID_COLUMN,guarantors,grid.guarantors,DEDICATED,loan_guarantor,guarantor_name,grid.guarantor_name,TEXT,DEDICATED,loan_guarantor,guarantor_name,Y,1

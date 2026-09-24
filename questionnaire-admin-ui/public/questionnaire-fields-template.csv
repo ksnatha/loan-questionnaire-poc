@@ -1,0 +1,4 @@
+row_type,field_key,label_key,field_type,storage_type,dedicated_table,dedicated_column,dropdown_source_type,dropdown_code_set_type,dropdown_source_key,static_options,required,display_order
+FIELD,annual_revenue,field.annual_revenue,NUMBER,DEDICATED,loan_financial_summary,annual_revenue,,,,,Y,1
+FIELD,business_structure,field.business_structure,DROPDOWN,EAV,,,CODE_SET,BUSINESS_STRUCTURE,,,Y,2
+FIELD,referral_source,field.referral_source,DROPDOWN,EAV,,,STATIC,,,walk_in:Walk-in;online:Online;broker:Broker,N,3
