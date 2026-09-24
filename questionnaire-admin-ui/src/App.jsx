@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { Fragment, useState, useEffect, useCallback } from 'react'
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 
@@ -74,7 +74,7 @@ function fieldLabel(labelKey) {
   return part.charAt(0).toUpperCase() + part.slice(1)
 }
 
-const FIELD_TYPES = ['TEXT', 'NUMBER', 'TEXTAREA', 'DROPDOWN']
+const FIELD_TYPES = ['TEXT', 'NUMBER', 'TEXTAREA', 'DROPDOWN', 'RADIO']
 
 // ── Blank field template ─────────────────────────────────────────────────────
 
@@ -254,6 +254,51 @@ function SectionEditor({ sectionMeta, onBack }) {
 
   function addField() {
     setFields(prev => [...prev, blankField()])
+    setSuccess(null)
+  }
+
+  function setDropdownSourceType(index, type) {
+    setFields(prev => prev.map((f, i) => {
+      if (i !== index) return f
+      if (!type) return { ...f, dropdownSource: null }
+      if (type === 'STATIC') return { ...f, dropdownSource: { type: 'STATIC', options: f.dropdownSource?.options ?? [] } }
+      if (type === 'CODE_SET') return { ...f, dropdownSource: { type: 'CODE_SET', codeSetType: f.dropdownSource?.codeSetType ?? '' } }
+      return { ...f, dropdownSource: { type: 'EXTERNAL', sourceKey: f.dropdownSource?.sourceKey ?? '' } }
+    }))
+    setSuccess(null)
+  }
+
+  function updateDropdownSourceAttr(index, key, value) {
+    setFields(prev => prev.map((f, i) =>
+      i !== index ? f : { ...f, dropdownSource: { ...f.dropdownSource, [key]: value } }
+    ))
+    setSuccess(null)
+  }
+
+  function addStaticOption(index) {
+    setFields(prev => prev.map((f, i) => {
+      if (i !== index) return f
+      const options = [...(f.dropdownSource?.options ?? []), { code: '', labelKey: '' }]
+      return { ...f, dropdownSource: { ...f.dropdownSource, options } }
+    }))
+  }
+
+  function updateStaticOption(index, optIndex, key, value) {
+    setFields(prev => prev.map((f, i) => {
+      if (i !== index) return f
+      const options = (f.dropdownSource?.options ?? []).map((o, oi) =>
+        oi !== optIndex ? o : { ...o, [key]: value })
+      return { ...f, dropdownSource: { ...f.dropdownSource, options } }
+    }))
+    setSuccess(null)
+  }
+
+  function removeStaticOption(index, optIndex) {
+    setFields(prev => prev.map((f, i) => {
+      if (i !== index) return f
+      const options = (f.dropdownSource?.options ?? []).filter((_, oi) => oi !== optIndex)
+      return { ...f, dropdownSource: { ...f.dropdownSource, options } }
+    }))
     setSuccess(null)
   }
 
@@ -447,8 +492,10 @@ function SectionEditor({ sectionMeta, onBack }) {
           <tbody>
             {fields.map((f, i) => {
               const isDedicated = f.storage?.type === 'DEDICATED'
+              const showDropdownSource = f.fieldType === 'DROPDOWN' || f.fieldType === 'RADIO'
               return (
-                <tr key={i}>
+                <Fragment key={i}>
+                <tr>
                   <td>
                     <input
                       type="text"
@@ -513,6 +560,94 @@ function SectionEditor({ sectionMeta, onBack }) {
                     )}
                   </td>
                 </tr>
+                {showDropdownSource && (
+                  <tr className="dropdown-source-row">
+                    <td colSpan={7}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', padding: '4px 0' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>
+                            Dropdown source
+                          </label>
+                          <select
+                            value={f.dropdownSource?.type ?? ''}
+                            onChange={e => setDropdownSourceType(i, e.target.value || null)}
+                            disabled={isReadOnly}
+                          >
+                            <option value="">— none —</option>
+                            <option value="STATIC">STATIC</option>
+                            <option value="CODE_SET">CODE_SET</option>
+                            <option value="EXTERNAL">EXTERNAL</option>
+                          </select>
+                        </div>
+
+                        {f.dropdownSource?.type === 'CODE_SET' && (
+                          <div>
+                            <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>
+                              Code set type
+                            </label>
+                            <input
+                              type="text"
+                              value={f.dropdownSource.codeSetType ?? ''}
+                              onChange={e => updateDropdownSourceAttr(i, 'codeSetType', e.target.value)}
+                              placeholder="e.g. PROPERTY_TYPE"
+                              readOnly={isReadOnly}
+                            />
+                          </div>
+                        )}
+
+                        {f.dropdownSource?.type === 'EXTERNAL' && (
+                          <div>
+                            <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>
+                              Source key
+                            </label>
+                            <input
+                              type="text"
+                              value={f.dropdownSource.sourceKey ?? ''}
+                              onChange={e => updateDropdownSourceAttr(i, 'sourceKey', e.target.value)}
+                              placeholder="e.g. postcode-lookup"
+                              readOnly={isReadOnly}
+                            />
+                          </div>
+                        )}
+
+                        {f.dropdownSource?.type === 'STATIC' && (
+                          <div style={{ flex: 1, minWidth: 260 }}>
+                            <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>
+                              Options (code / label key)
+                            </label>
+                            {(f.dropdownSource.options ?? []).map((opt, oi) => (
+                              <div key={oi} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                                <input
+                                  type="text"
+                                  value={opt.code}
+                                  onChange={e => updateStaticOption(i, oi, 'code', e.target.value)}
+                                  placeholder="code"
+                                  readOnly={isReadOnly}
+                                  style={{ width: 110 }}
+                                />
+                                <input
+                                  type="text"
+                                  value={opt.labelKey}
+                                  onChange={e => updateStaticOption(i, oi, 'labelKey', e.target.value)}
+                                  placeholder="label key"
+                                  readOnly={isReadOnly}
+                                />
+                                {!isReadOnly && (
+                                  <button className="btn-danger" title="Remove option"
+                                    onClick={() => removeStaticOption(i, oi)}>✕</button>
+                                )}
+                              </div>
+                            ))}
+                            {!isReadOnly && (
+                              <button className="btn btn-sm" onClick={() => addStaticOption(i)}>+ Add option</button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               )
             })}
             {!isReadOnly && (
