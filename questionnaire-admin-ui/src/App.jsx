@@ -38,6 +38,24 @@ const AS = {
     }),
 }
 
+// lookup-stub-service  (proxy: /lookup-api → :8081)
+const LS = {
+  bulkUploadCodeSets: async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const resp = await fetch('/lookup-api/code-sets/bulk-upload', {
+      method: 'POST', body: formData,
+    })
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      let message = text
+      try { message = JSON.parse(text).error ?? text } catch { /* not JSON */ }
+      throw new Error(message || `HTTP ${resp.status}`)
+    }
+    return resp.json()
+  },
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function sectionLabel(labelKey) {
@@ -459,10 +477,81 @@ function SectionEditor({ sectionMeta, onBack }) {
   )
 }
 
+// ── Code Sets View ───────────────────────────────────────────────────────────
+
+function CodeSetsPage() {
+  const [file, setFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState(null)
+  const [result, setResult] = useState(null)
+
+  async function handleUpload() {
+    if (!file) {
+      setError('Choose a file first.')
+      return
+    }
+    const confirmed = window.confirm(
+      'This will replace all codes for whatever types are in the file. Continue?'
+    )
+    if (!confirmed) return
+
+    setUploading(true)
+    setError(null)
+    setResult(null)
+    try {
+      const resp = await LS.bulkUploadCodeSets(file)
+      setResult(resp)
+    } catch (e) {
+      setError('Upload failed: ' + e.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h2 className="page-title">Code Sets</h2>
+          <p className="page-sub">
+            Bulk-replace CODE_SET reference data by type. Full replace per type present in the file —
+            types not in the file are untouched.
+          </p>
+        </div>
+      </div>
+
+      {error && <div className="msg-error">{error}</div>}
+      {result && (
+        <div className="msg-success">
+          Replaced {result.typesReplaced.join(', ')} — {result.rowsInserted} row
+          {result.rowsInserted !== 1 ? 's' : ''} inserted.
+        </div>
+      )}
+
+      <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <a href="/codeset-template.csv" download>Download CSV template</a>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <input
+            type="file"
+            accept=".csv,.xlsx"
+            onChange={e => { setFile(e.target.files?.[0] ?? null); setResult(null); setError(null) }}
+          />
+          <button className="btn-primary" onClick={handleUpload} disabled={uploading || !file}>
+            {uploading ? 'Uploading…' : 'Upload'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Root ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [editTarget, setEditTarget] = useState(null) // null = list view
+  const [view, setView] = useState('sections') // 'sections' | 'codesets'
+  const [editTarget, setEditTarget] = useState(null) // null = section list view
 
   return (
     <div className="app">
@@ -473,9 +562,26 @@ export default function App() {
         </div>
       </header>
 
-      {editTarget == null
-        ? <SectionList onEdit={s => setEditTarget(s)} />
-        : <SectionEditor sectionMeta={editTarget} onBack={() => setEditTarget(null)} />
+      <nav className="top-nav" style={{ display: 'flex', gap: 16, padding: '0 24px', borderBottom: '1px solid var(--border, #ddd)' }}>
+        <button
+          className={view === 'sections' ? 'btn-tab btn-tab-active' : 'btn-tab'}
+          onClick={() => { setView('sections'); setEditTarget(null) }}
+        >
+          Section Templates
+        </button>
+        <button
+          className={view === 'codesets' ? 'btn-tab btn-tab-active' : 'btn-tab'}
+          onClick={() => setView('codesets')}
+        >
+          Code Sets
+        </button>
+      </nav>
+
+      {view === 'codesets'
+        ? <CodeSetsPage />
+        : (editTarget == null
+            ? <SectionList onEdit={s => setEditTarget(s)} />
+            : <SectionEditor sectionMeta={editTarget} onBack={() => setEditTarget(null)} />)
       }
     </div>
   )

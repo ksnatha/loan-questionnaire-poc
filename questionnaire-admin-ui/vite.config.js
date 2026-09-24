@@ -13,6 +13,10 @@ export default defineConfig({
       '/app-api': {
         target: 'http://localhost:8083',
         rewrite: path => path.replace(/^\/app-api/, '')
+      },
+      '/lookup-api': {
+        target: 'http://localhost:8081',
+        rewrite: path => path.replace(/^\/lookup-api/, '')
       }
     }
   }

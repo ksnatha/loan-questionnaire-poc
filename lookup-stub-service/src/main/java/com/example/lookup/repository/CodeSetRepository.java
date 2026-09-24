@@ -20,4 +20,6 @@ public interface CodeSetRepository extends JpaRepository<CodeSet, Long> {
     Optional<CodeSet> findByTypeAndCodeAsOf(@Param("type") String type,
                                              @Param("code") String code,
                                              @Param("asOf") LocalDate asOf);
+
+    void deleteByCodeSetType(String codeSetType);
 }

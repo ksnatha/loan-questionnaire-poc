@@ -69,6 +69,16 @@ body {
 .banner-title { font-weight: 600; font-size: 17px; }
 .banner-sub { font-size: 12px; color: var(--text-on-banner-muted); margin-top: 1px; }
 
+/* ── Top nav ── */
+.btn-tab {
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  background: none; color: var(--text-secondary);
+  border: none; border-bottom: 2px solid transparent;
+  padding: 12px 2px; cursor: pointer;
+}
+.btn-tab:hover { color: var(--text-primary); }
+.btn-tab-active { color: var(--accent); border-bottom-color: var(--accent); }
+
 /* ── Page body ── */
 .page { flex: 1; padding: 28px 32px; overflow-y: auto; max-width: 1100px; }
 

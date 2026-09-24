@@ -1,0 +1,4 @@
+type,code,value,display_order
+LOAN_PURPOSE,REFI,Refinance,1
+LOAN_PURPOSE,PURCHASE,Purchase,2
+PROPERTY_TYPE,INDUSTRIAL,Industrial,1
