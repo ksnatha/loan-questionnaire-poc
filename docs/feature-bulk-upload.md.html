@@ -1,0 +1,469 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>Feature: Bulk Upload (CODE_SET + Questionnaire Fields) + Field Editor Dropdown Provisioning</h1>
+<p>Grounded against the actual repo (<code>loan-questionnaire-poc</code>), reviewed directly —
+not against the original docs' assumptions. Three tasks, in dependency order,
+plus one prerequisite bug fix discovered while reviewing the code this touches.</p>
+<p><strong>Give this whole document to Claude Code, but treat each Phase below as its
+own session/commit, same pattern as the rest of the build.</strong></p>
+<hr>
+<h2>Phase 0 (prerequisite) — fix two issues in <code>questionnaire-admin-ui</code> before building on top of it</h2>
+<ol>
+<li><strong>Real bug:</strong> <code>SectionEditor.buildTemplate()</code> in <code>App.jsx</code> hardcodes
+<code>grids: []</code>. Every save from this UI silently deletes any grid definition
+the section already had (<code>Associated Records</code>' EAV grid, or
+<code>loan_guarantor</code>'s DEDICATED grid). Fix: <code>buildTemplate()</code> must include
+the section's existing grids array, not discard it — load it alongside
+<code>fields</code> in <code>SectionEditor</code>'s <code>useEffect</code>, keep it in state, include it
+unmodified in <code>buildTemplate()</code>'s output (grid editing UI itself stays out
+of scope, per the existing comment — just stop deleting what's there).</li>
+<li><strong>Stale comment:</strong> <code>App.jsx</code>'s <code>AS</code> block comment says
+<code>(proxy: /app-api → :8080)</code> — <code>vite.config.js</code> actually proxies to
+<code>:8083</code>. Fix the comment.</li>
+</ol>
+<p><strong>Acceptance:</strong> open a section that has a grid, click &quot;Save draft&quot; without
+touching anything, reload the section — the grid is still there.</p>
+<hr>
+<h2>Phase 1 — CODE_SET bulk upload</h2>
+<p><strong>Scope, per explicit decision: full replace per type, no history preservation.</strong>
+This is a convenience data-loading tool for demo purposes, not the mechanism
+that proves Axis 2 versioning (that stays the existing close-old/insert-new
+relabel path — do not reuse this for that).</p>
+<h3>Backend — <code>lookup-stub-service</code></h3>
+<ul>
+<li>Add <code>org.apache.poi:poi-ooxml</code> to <code>lookup-stub-service/build.gradle</code> for
+<code>.xlsx</code> parsing. Parse <code>.csv</code> without a dependency (simple split, or
+<code>commons-csv</code> if preferred).</li>
+<li><code>CodeSetRepository</code>: add <code>void deleteByCodeSetType(String codeSetType);</code></li>
+<li>New endpoint: <code>POST /code-sets/bulk-upload</code>, multipart file upload.
+<ul>
+<li>Parse rows: <code>type</code>, <code>code</code>, <code>value</code>, optional <code>display_order</code> (default
+to file row order if omitted).</li>
+<li>Group parsed rows by distinct <code>type</code>.</li>
+<li>For each distinct <code>type</code> present in the file: <code>deleteByCodeSetType(type)</code>,
+then insert every row for that type with <code>startDate = LocalDate.now()</code>,
+<code>endDate = null</code>, <code>activeInd = &quot;Y&quot;</code>.</li>
+<li>A <code>type</code> <strong>not</strong> present in the file is untouched.</li>
+<li>Response: <code>{ &quot;typesReplaced&quot;: [&quot;LOAN_PURPOSE&quot;, &quot;PROPERTY_TYPE&quot;], &quot;rowsInserted&quot;: 9 }</code></li>
+</ul>
+</li>
+<li>No preview/commit split, no dry-run — single call, immediate effect, per
+the explicit &quot;keep it simple&quot; decision. The only safety net is the
+client-side confirm below.</li>
+</ul>
+<h3>Template</h3>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>code</th>
+<th>value</th>
+<th>display_order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LOAN_PURPOSE</td>
+<td>REFI</td>
+<td>Refinance</td>
+<td>1</td>
+</tr>
+<tr>
+<td>LOAN_PURPOSE</td>
+<td>PURCHASE</td>
+<td>Purchase</td>
+<td>2</td>
+</tr>
+<tr>
+<td>PROPERTY_TYPE</td>
+<td>INDUSTRIAL</td>
+<td>Industrial</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>Add a static template file at <code>questionnaire-admin-ui/public/codeset-template.csv</code>
+with these exact headers and 2–3 example rows — a plain <code>&lt;a download&gt;</code> link,
+no server-side generation needed.</p>
+<h3>Frontend — <code>questionnaire-admin-ui</code></h3>
+<ul>
+<li>Add a proxy entry to <code>vite.config.js</code> for <code>lookup-stub-service</code>:
+<code>'/lookup-api': { target: 'http://localhost:8081', rewrite: path =&gt; path.replace(/^\/lookup-api/, '') }</code></li>
+<li>New top-level page, &quot;Code Sets&quot; — add simple nav (two links/tabs at the
+top of <code>App.jsx</code>: &quot;Section Templates&quot; / &quot;Code Sets&quot;) since there's
+currently no navigation at all between views.</li>
+<li>File input + &quot;Upload&quot; button. Before calling the endpoint, show
+<code>window.confirm(...)</code> listing nothing more specific than &quot;this will
+replace all codes for whatever types are in the file&quot; (the actual type
+list isn't known client-side until the server parses it — keep this
+honestly simple, not a fake preview).</li>
+<li>On success, show the returned <code>typesReplaced</code>/<code>rowsInserted</code> summary.</li>
+<li>Link to <code>/codeset-template.csv</code> for the template download.</li>
+</ul>
+<p><strong>Acceptance:</strong> upload a file with <code>LOAN_PURPOSE</code> and a new type,
+<code>GUARANTOR_TIER</code>; confirm <code>LOAN_PURPOSE</code>'s old rows are gone and replaced,
+<code>GUARANTOR_TIER</code> is newly created, and every other existing type (e.g.
+<code>PROPERTY_TYPE</code>) is untouched. Confirm <code>GET /code-sets/LOAN_PURPOSE?asOf=today</code>
+reflects the new set immediately.</p>
+<hr>
+<h2>Phase 2 — Questionnaire fields bulk upload</h2>
+<p><strong>Scope, revised from the original &quot;full replace&quot; decision after reviewing
+the actual seed data.</strong> Field-level attributes (<code>labelKey</code>, <code>fieldType</code>,
+<code>storage</code>, <code>dropdownSource</code>, <code>required</code>, order) and grid membership are
+fully replaced by file contents, per field/column key present in the file.
+<strong><code>visibilityRules</code>/<code>validationRules</code> are carried forward unchanged for any
+<code>fieldKey</code> that already exists in the current draft/active template</strong> — the
+upload template has no columns for rules (deliberately — see below), so a
+literal full replace would silently delete every conditional rule in the
+section on any upload, including ones on fields the upload never intended
+to touch. A <code>fieldKey</code> new to the file gets empty rules, same as before. A
+<code>fieldKey</code> that existed before but is absent from the file is dropped
+entirely (that's still a real removal — full replace on <em>membership</em>, merge
+on <em>rules for what's kept</em>). This only ever touches a DRAFT (creating one
+from the current ACTIVE if none exists) — publish stays the separate,
+existing step.</p>
+<h3>Backend — <code>questionnaire-service</code></h3>
+<ul>
+<li>
+<p>Add <code>org.apache.poi:poi-ooxml</code> to <code>questionnaire-service/build.gradle</code>.</p>
+</li>
+<li>
+<p>New endpoint: <code>POST /sections/{sectionId}/bulk-upload</code>, multipart file
+upload.</p>
+</li>
+<li>
+<p>Flat row schema (one file covers one section's fields and grid columns
+together, via <code>row_type</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Required</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>row_type</code></td>
+<td>Y</td>
+<td><code>FIELD</code> or <code>GRID_COLUMN</code></td>
+</tr>
+<tr>
+<td><code>grid_key</code></td>
+<td>Y for GRID_COLUMN</td>
+<td>groups rows into the same grid</td>
+</tr>
+<tr>
+<td><code>grid_label_key</code></td>
+<td>Y for GRID_COLUMN (first row of each grid)</td>
+<td>repeated per row of that grid, redundant but keeps the format flat</td>
+</tr>
+<tr>
+<td><code>grid_storage_type</code></td>
+<td>Y for GRID_COLUMN</td>
+<td><code>EAV</code> or <code>DEDICATED</code></td>
+</tr>
+<tr>
+<td><code>grid_backing_table</code></td>
+<td>Y if <code>grid_storage_type=DEDICATED</code></td>
+<td>e.g. <code>loan_guarantor</code></td>
+</tr>
+<tr>
+<td><code>field_key</code></td>
+<td>Y</td>
+<td></td>
+</tr>
+<tr>
+<td><code>label_key</code></td>
+<td>Y</td>
+<td>e.g. <code>field.annual_revenue</code></td>
+</tr>
+<tr>
+<td><code>field_type</code></td>
+<td>Y</td>
+<td><code>TEXT</code> / <code>NUMBER</code> / <code>TEXTAREA</code> / <code>DROPDOWN</code> / <code>RADIO</code> — matches <code>FieldType</code> exactly, nothing invented</td>
+</tr>
+<tr>
+<td><code>storage_type</code></td>
+<td>Y</td>
+<td><code>DEDICATED</code> or <code>EAV</code></td>
+</tr>
+<tr>
+<td><code>dedicated_table</code></td>
+<td>Y if DEDICATED</td>
+<td>validated against <code>AllowlistValidator.ALLOWLIST</code></td>
+</tr>
+<tr>
+<td><code>dedicated_column</code></td>
+<td>Y if DEDICATED</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>dropdown_source_type</code></td>
+<td>N</td>
+<td><code>STATIC</code> / <code>CODE_SET</code> / <code>EXTERNAL</code> — blank if not a dropdown</td>
+</tr>
+<tr>
+<td><code>dropdown_code_set_type</code></td>
+<td>N</td>
+<td>if <code>CODE_SET</code></td>
+</tr>
+<tr>
+<td><code>dropdown_source_key</code></td>
+<td>N</td>
+<td>if <code>EXTERNAL</code></td>
+</tr>
+<tr>
+<td><code>static_options</code></td>
+<td>N</td>
+<td>if <code>STATIC</code> — <code>code:labelKey;code:labelKey</code> pairs</td>
+</tr>
+<tr>
+<td><code>required</code></td>
+<td>Y</td>
+<td><code>Y</code>/<code>N</code></td>
+</tr>
+<tr>
+<td><code>display_order</code></td>
+<td>Y</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Parser builds a <code>SectionTemplateJson</code> (from <code>common</code>): <code>FIELD</code> rows become
+<code>fields</code>, <code>GRID_COLUMN</code> rows group by <code>grid_key</code> into <code>GridDefinition</code>
+entries with their <code>columns</code>.</p>
+</li>
+<li>
+<p><strong>Rule-preservation merge, required:</strong> before saving, load the section's
+current template (the DRAFT if one exists, else the ACTIVE version) and
+index its existing <code>fields</code>/grid <code>columns</code> by <code>fieldKey</code>. For each parsed
+field/column from the upload, if a match exists by <code>fieldKey</code>, copy that
+existing field's <code>visibilityRules</code> and <code>validationRules</code> onto the newly
+parsed object before it's saved. If no match exists, leave the new
+object's rules empty (nothing to carry forward). This is a small lookup
+map built once per upload, not a structural change to the parser.</p>
+</li>
+<li>
+<p><strong>Do not duplicate draft-lifecycle logic</strong> — call the existing
+<code>SectionTemplateService.createDraftRevision(sectionId, parsedTemplate)</code> if
+no DRAFT exists, or <code>updateDraft(sectionId, draftVersion, parsedTemplate)</code>
+if one does. The bulk-upload endpoint's only new logic is parsing the file
+into a <code>SectionTemplateJson</code> — everything after that reuses what's already
+built.</p>
+</li>
+<li>
+<p><strong>Recommended addition, not in the original design:</strong> run
+<code>AllowlistValidator.validate()</code> against the parsed template at upload time
+too (currently only runs at publish), so a bad DEDICATED reference fails
+immediately with a row-level message instead of surfacing later at
+publish. Catch its <code>IllegalArgumentException</code> and return it as a 400 with
+the specific field/grid-column key that failed.</p>
+</li>
+<li>
+<p>Response: <code>{ &quot;sectionId&quot;: &quot;...&quot;, &quot;draftVersion&quot;: 3, &quot;fieldCount&quot;: 12, &quot;gridCount&quot;: 1 }</code></p>
+</li>
+</ul>
+<h3>Template</h3>
+<p>FIELD rows:</p>
+<table>
+<thead>
+<tr>
+<th>row_type</th>
+<th>field_key</th>
+<th>label_key</th>
+<th>field_type</th>
+<th>storage_type</th>
+<th>dropdown_source_type</th>
+<th>dropdown_code_set_type</th>
+<th>static_options</th>
+<th>required</th>
+<th>display_order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FIELD</td>
+<td>annual_revenue</td>
+<td>field.annual_revenue</td>
+<td>NUMBER</td>
+<td>DEDICATED*</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Y</td>
+<td>1</td>
+</tr>
+<tr>
+<td>FIELD</td>
+<td>business_structure</td>
+<td>field.business_structure</td>
+<td>DROPDOWN</td>
+<td>EAV</td>
+<td>CODE_SET</td>
+<td>BUSINESS_STRUCTURE</td>
+<td></td>
+<td>Y</td>
+<td>2</td>
+</tr>
+<tr>
+<td>FIELD</td>
+<td>referral_source</td>
+<td>field.referral_source</td>
+<td>DROPDOWN</td>
+<td>EAV</td>
+<td>STATIC</td>
+<td></td>
+<td>walk_in:Walk-in;online:Online;broker:Broker</td>
+<td>N</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>*plus <code>dedicated_table</code>/<code>dedicated_column</code> columns for DEDICATED rows, omitted above for width.</p>
+<p>GRID_COLUMN rows (example: extending <code>loan_guarantor</code>):</p>
+<table>
+<thead>
+<tr>
+<th>row_type</th>
+<th>grid_key</th>
+<th>grid_label_key</th>
+<th>grid_storage_type</th>
+<th>grid_backing_table</th>
+<th>field_key</th>
+<th>label_key</th>
+<th>field_type</th>
+<th>storage_type</th>
+<th>dedicated_table</th>
+<th>dedicated_column</th>
+<th>required</th>
+<th>display_order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GRID_COLUMN</td>
+<td>guarantors</td>
+<td>grid.guarantors</td>
+<td>DEDICATED</td>
+<td>loan_guarantor</td>
+<td>guarantor_name</td>
+<td>grid.guarantor_name</td>
+<td>TEXT</td>
+<td>DEDICATED</td>
+<td>loan_guarantor</td>
+<td>guarantor_name</td>
+<td>Y</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>Static template files at <code>questionnaire-admin-ui/public/questionnaire-fields-template.csv</code>
+(FIELD rows only) and <code>questionnaire-fields-grid-template.csv</code> (GRID_COLUMN
+example) — two files rather than cramming both into one to keep each
+template legible.</p>
+<p><strong>Deliberately excluded, same as the original design discussion:</strong>
+<code>visibilityRules</code>/<code>validationRules</code> don't flatten cleanly into spreadsheet
+rows — conditional-rule authoring stays in the admin UI, not bulk upload.</p>
+<h3>Important constraint — DEDICATED fields need two lists to agree, in two services</h3>
+<p>Confirmed directly from <code>ApplicationService.java</code>: DEDICATED reads/writes
+are <strong>not</strong> reflection and <strong>not</strong> dynamic SQL — they're a hand-written
+<code>Map&lt;String, BiConsumer&lt;...&gt;&gt;</code>/<code>Map&lt;String, Function&lt;...&gt;&gt;</code> in
+<code>ApplicationService</code> (<code>dedicatedWriters</code>/<code>dedicatedReaders</code>), one lambda per
+<code>table.column</code>, each calling a real typed setter/getter on the real JPA
+entity. This means <strong>two separate hardcoded lists have to agree</strong>:
+<code>questionnaire-service</code>'s <code>AllowlistValidator.ALLOWLIST</code> (what a template
+may <em>declare</em>) and <code>application-service</code>'s <code>dedicatedWriters</code>/
+<code>dedicatedReaders</code> (what actually <em>reads/writes</em>). Bulk upload — same as the
+manual editor — can only <strong>reference</strong> a <code>table.column</code> pair that already
+exists in both. It cannot create a new dedicated column, entity field, or
+wiring entry; that remains a small manual Java change in <code>application-service</code>,
+independent of and prior to any bulk upload referencing it.</p>
+<p><strong>Hardening fix, worth doing as part of this feature, not deferred:</strong>
+currently, <code>dedicatedWriters.getOrDefault(ref, (a, v) -&gt; {}).accept(app, value)</code>
+and the equivalent reader call <strong>silently no-op</strong> if <code>ref</code> isn't in the map —
+no exception, the value is just dropped. This was a narrow risk when
+DEDICATED fields were only ever added one at a time by hand; bulk upload
+makes a typo'd or drifted <code>table.column</code> string much more likely, and a
+silent data loss is a worse failure mode for a bulk operation than a loud
+one. Change both call sites to throw (e.g. <code>IllegalStateException</code>) when the
+map lookup misses, with the <code>ref</code> string in the message, so an allowlist/
+wiring drift fails immediately and visibly instead of quietly dropping data.</p>
+<h3>Frontend — <code>questionnaire-admin-ui</code></h3>
+<ul>
+<li>In <code>SectionEditor</code>, add an &quot;Upload fields (CSV/XLSX)&quot; button next to the
+existing Save/Publish buttons, plus two <code>&lt;a download&gt;</code> links to
+<code>/questionnaire-fields-template.csv</code> and
+<code>/questionnaire-fields-grid-template.csv</code> right beside it — these were
+missing from the original plan; the files existing under <code>public/</code> does
+nothing without a link to them in the UI.</li>
+<li>On upload: call the new endpoint, then re-run the existing <code>loadSection()</code>
+logic so the editor reflects exactly what the server now has as the
+DRAFT — the admin reviews the result in the normal editor UI before
+deciding to Save-confirm or Publish, same safety model as manual editing.</li>
+<li><code>window.confirm(...)</code> before uploading: &quot;This replaces all fields and
+grids in the current draft with the file's contents. Continue?&quot;</li>
+</ul>
+<p><strong>Acceptance:</strong> upload a file for a section with no existing DRAFT — a new
+DRAFT is created reflecting exactly the file's fields and grids. Upload a
+file with a DEDICATED field pointing at a table/column not in
+<code>AllowlistValidator.ALLOWLIST</code> — rejected immediately with the specific bad
+reference named, not a generic error. Separately, confirm a <code>table.column</code>
+that's allowlisted but has no matching <code>dedicatedWriters</code>/<code>dedicatedReaders</code>
+entry now throws at save/render time instead of silently dropping the
+value. <strong>Critically:</strong> upload a file for <code>financial-details</code> that changes
+only <code>primary_bank</code>'s label, leaving every other row identical to the
+current template — confirm afterward that <code>financial_statements_provided</code>'s
+visibility/validation rules (and the other 5 conditional Yes/No/N-A pairs
+in that section) are still intact in the resulting draft, not wiped.</p>
+<hr>
+<h2>Phase 3 — Section rename via API, not direct H2 edits</h2>
+<p>Currently there's no way to change a section's <code>labelKey</code> after creation —
+<code>CreateSectionRequest</code> accepts it once, but <code>UpdateSectionRequest</code> and
+<code>DraftRevisionRequest</code> only carry <code>template</code>. The only way to rename a
+section today is a direct H2 edit, which bypasses the draft/publish
+lifecycle this whole system is built around.</p>
+<ul>
+<li>Add <code>labelKey</code> as an optional field on <code>UpdateSectionRequest</code>.</li>
+<li><code>SectionTemplateService.updateDraft()</code>: if the request's <code>labelKey</code> is
+non-null, set it on the draft entity before saving, alongside the
+existing template-JSON update.</li>
+<li>Frontend: add a label-key text input to <code>SectionEditor</code>, editable the same
+way any other draft field is (goes through Save draft → Publish, same as
+everything else).</li>
+</ul>
+<p><strong>Acceptance:</strong> change a section's label through the admin UI, save as
+draft, publish — confirm the new label is reflected without touching H2
+directly.</p>
+<hr>
+<h2>Phase 4 — Field editor: dropdown_source / static-values provisioning</h2>
+<p><strong>This is the item you flagged as lower priority — deliberately last.</strong>
+Currently <code>SectionEditor</code>'s manual field editor has no UI at all for
+<code>dropdownSource</code> — <code>blankField()</code> never sets it, and there's no way to pick
+CODE_SET/STATIC/EXTERNAL or enter static options by hand. Fields with a
+dropdown source today can only get one via bulk upload (Phase 2) or by an
+API call outside the UI. This phase closes that gap for manual editing.</p>
+<ul>
+<li>Add a &quot;Dropdown source&quot; control, shown only when <code>fieldType === 'DROPDOWN'</code>
+(or <code>RADIO</code>, if you want radio groups sourced the same way):
+<ul>
+<li>A select: <code>STATIC</code> / <code>CODE_SET</code> / <code>EXTERNAL</code>.</li>
+<li><code>CODE_SET</code> selected → text input for <code>codeSetType</code>.</li>
+<li><code>EXTERNAL</code> selected → text input for <code>sourceKey</code>.</li>
+<li><code>STATIC</code> selected → a small repeatable code/label-key pair list (add/remove
+rows), building <code>DropdownSource.options</code>.</li>
+</ul>
+</li>
+<li>Update <code>blankField()</code> to leave <code>dropdownSource: null</code> (unchanged) but
+ensure <code>buildTemplate()</code> (already includes <code>dropdownSource</code> per the
+existing code) sends whatever the new control produces.</li>
+<li><code>FIELD_TYPES</code> constant in <code>App.jsx</code> currently omits <code>RADIO</code> even though
+<code>FieldType</code> supports it — add it while you're touching this area, since a
+RADIO field would otherwise be unreachable from this UI entirely.</li>
+</ul>
+<p><strong>Acceptance:</strong> create a new field, set type to DROPDOWN, choose CODE_SET,
+enter <code>PROPERTY_TYPE</code>, save as draft, confirm via <code>GET /sections/{id}/versions/{v}</code> that <code>dropdownSource</code> is correctly <code>{&quot;type&quot;: &quot;CODE_SET&quot;, &quot;codeSetType&quot;: &quot;PROPERTY_TYPE&quot;}</code> in the stored <code>template_json</code>.</p>
+
+</body></html>

@@ -30,7 +30,7 @@ const QS = {
     apiFetch(`/api/sections/${sectionId}/versions/${version}/publish`, { method: 'POST' }),
 }
 
-// application-service  (proxy: /app-api → :8080)
+// application-service  (proxy: /app-api → :8083)
 const AS = {
   cloneForward: (newSnapshotCode, overrides) =>
     apiFetch('/app-api/snapshots/clone-forward', {
@@ -158,6 +158,7 @@ function SectionList({ onEdit }) {
 
 function SectionEditor({ sectionMeta, onBack }) {
   const [fields, setFields] = useState([])
+  const [grids, setGrids] = useState([]) // not editable in this UI — preserved as-is through save
   const [draftVersion, setDraftVersion] = useState(null) // null = editing from active, not yet saved
   const [loadedVersion, setLoadedVersion] = useState(null)
   const [loadedLabelKey, setLoadedLabelKey] = useState('')
@@ -175,6 +176,7 @@ function SectionEditor({ sectionMeta, onBack }) {
       try {
         const data = await QS.getSection(sectionMeta.sectionId, versionToLoad)
         setFields(fieldsFromTemplate(data.template))
+        setGrids(data.template?.grids ?? [])
         setLoadedVersion(versionToLoad)
         setLoadedLabelKey(data.labelKey)
         if (sectionMeta.draftVersion) setDraftVersion(sectionMeta.draftVersion)
@@ -223,7 +225,7 @@ function SectionEditor({ sectionMeta, onBack }) {
         validationRules: f.validationRules ?? [],
         dropdownSource: f.dropdownSource ?? null,
       })),
-      grids: [], // grid editing not in scope for this version
+      grids, // grid editing UI not in scope — pass through unmodified so saves don't drop it
     }
   }
 
