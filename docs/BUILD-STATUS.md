@@ -1,6 +1,74 @@
 # Build Status
 
-Last updated: 2026-09-23
+Last updated: 2026-09-24 (overnight run)
+
+---
+
+## Overnight run — Bulk Upload feature (2026-09-23 → 2026-09-24)
+
+Worked through `docs/feature-bulk-upload.md.html` Phase 0 → Phase 4 in order, unattended,
+per the instructions left before going to bed. **All five phases completed; nothing is
+blocked.** No genuine design ambiguity came up that needed a stop — two narrow judgment
+calls were made along the way and are called out below so they're not silently baked in.
+
+One naming note: the run instructions referred to `docs/Architecture.md`,
+`docs/AI-Agent-Build-Instructions.md`, and `docs/feature-bulk-upload.md`. The actual files
+in this repo are `docs/questionnaire-poc-architecture.md`,
+`docs/questionnaire-poc-ai-agent-instructions.md`, and `docs/feature-bulk-upload.md.html`
+(an HTML export, not a `.md` file — it was untracked at the start of the run and has now
+been committed). Content matched the intended spec in all three cases; only the filenames
+differed. Flagging this since it's worth checking whether the `.md.html` export is the
+canonical copy or whether a plain `.md` was meant to replace it.
+
+| Phase | Status | Commit |
+|---|---|---|
+| **Phase 0** — fix `questionnaire-admin-ui` grid-discard bug + stale proxy comment | Complete | `Phase 0: fix questionnaire-admin-ui grid-discard bug and stale proxy comment` |
+| **Phase 1** — CODE_SET bulk upload | Complete | `Phase 1: CODE_SET bulk upload` |
+| **Phase 2** — Questionnaire fields bulk upload (+ rule-preservation merge, + allowlist-at-upload, + dedicated-map hardening) | Complete | `Phase 2: questionnaire fields bulk upload` |
+| **Phase 3** — Section rename via API | Complete | `Phase 3: section rename via API` |
+| **Phase 4** — Field editor dropdown_source / static-values provisioning | Complete | `Phase 4: field editor dropdown_source / static-values provisioning` |
+
+**Test suite: 72 tests, 72 passing, 0 failing** as of this run (backend 54 + `application-ui`
+18 — see the updated Test coverage section below for the full breakdown, including the 15
+tests added this run).
+
+### Judgment calls made along the way (not blockers — noted for visibility)
+
+1. **Phase 3 label-key on first save.** The spec scoped the rename support to
+   `UpdateSectionRequest`/`updateDraft()` only, not `DraftRevisionRequest`/
+   `createDraftRevision()`. Taken literally, editing the label on a section that has no
+   existing DRAFT yet and clicking "Save draft" once would silently drop the rename (the
+   first call is `createDraftRevision`, which doesn't carry `labelKey`). Rather than expand
+   the backend's scope beyond what the spec asked for, `SectionEditor`'s save handler now
+   makes a follow-up `updateDraft` call with the label change immediately after
+   `createDraftRevision` when the label changed and this was the first save — same two
+   endpoints the spec defined, just sequenced so one client action reliably renames a
+   brand-new draft too.
+2. **`lookup-stub-service` had no `GlobalExceptionHandler`** (unlike `questionnaire-service`,
+   which already had one). Added a minimal one mapping `IllegalArgumentException` → 400, so
+   the new bulk-upload endpoint's parsing errors (missing columns, bad rows) return a proper
+   4xx with the message instead of a generic 500. Matches the existing pattern in
+   `questionnaire-service` rather than inventing a new one.
+3. **CSV parsing is a naive `split(",")`** in both new bulk-upload parsers (lookup-stub-service
+   and questionnaire-service), matching the spec's explicit "simple split... if preferred"
+   guidance. Does not handle quoted fields containing commas. Fine for the demo/admin-tool
+   templates provided; would need a real CSV library if hand-authored files start using
+   quoted commas.
+
+### What's new (files, not previously in the module structure list below)
+
+- `lookup-stub-service`: `CodeSetBulkUploadService`, `GlobalExceptionHandler`,
+  `BulkUploadResponse` DTO, `CodeSetRepository.deleteByCodeSetType()`.
+- `questionnaire-service`: `QuestionnaireFieldsBulkUploadService`,
+  `BulkUploadFieldsResponse` DTO, `SectionTemplateService.updateDraft(..., labelKey)` overload.
+- `application-service`: `ApplicationService.dedicatedWriter()`/`dedicatedReader()` helpers
+  (throw `IllegalStateException` on an allowlist/wiring-map drift instead of silently
+  no-opping — see Phase 2 commit message for the full rationale).
+- `questionnaire-admin-ui`: top nav (Section Templates / Code Sets — there was none before),
+  `CodeSetsPage`, bulk-upload button + label-key input + dropdown-source controls in
+  `SectionEditor`, `apiUploadFile()` shared multipart helper.
+- New static template files under `questionnaire-admin-ui/public/`: `codeset-template.csv`,
+  `questionnaire-fields-template.csv`, `questionnaire-fields-grid-template.csv`.
 
 ---
 
@@ -160,8 +228,12 @@ loan-questionnaire-poc/
 | Test class | Tests | Coverage |
 |---|---|---|
 | `AllowlistValidatorTest` | 5 | DEDICATED allowlist accept/reject, grid column validation, duplicate fieldKey detection |
+| `QuestionnaireFieldsBulkUploadIntegrationTest` | 3 | Creates a DRAFT from a file when none exists; rejects a DEDICATED field not in the allowlist with the specific ref named; full-replace upload preserves visibilityRules/validationRules on every existing fieldKey it didn't touch (financial-details, 15 fields, 3 conditional Yes/No/N-A pairs) |
+| `SectionRenameIntegrationTest` | 1 | Rename via `updateDraft` survives `publish` and shows up in both the single-section GET and the section list |
 
-**Gap:** No `@SpringBootTest` / `MockMvc` integration tests for `SectionTemplateService` or `TabTemplateService`. The build instructions require integration tests covering create→publish lifecycle and the DEDICATED-rejection at publish time. The unit test covers the validator in isolation; a full `@DataJpaTest` wiring through the service layer is missing.
+**9 tests pass.**
+
+**Gap (pre-existing, narrowed but not closed):** Still no `@SpringBootTest` integration tests for `TabTemplateService`, and no coverage of `SectionTemplateService.create()`/`publish()` in isolation from the two new integration tests above (which exercise them indirectly). The build instructions require dedicated create→publish lifecycle tests; the two new test classes cover the bulk-upload and rename paths specifically, not the general case.
 
 ### application-service
 
@@ -182,8 +254,9 @@ loan-questionnaire-poc/
 | Test class | Tests | What it covers |
 |---|---|---|
 | `CodeSetRepositoryTest` | 5 | Date-filter logic: active, expired, future-dated, inactive-flag, `asOf=today` |
+| `CodeSetBulkUploadIntegrationTest` | 4 | Full replace per type + untouched types + new type in one upload; `display_order` defaults to file row order when omitted; XLSX parsing (not just CSV); rejects a file missing a required column |
 
-Sanity-level coverage as prescribed (throwaway stub).
+**9 tests pass.** Sanity-level coverage as prescribed (throwaway stub), extended to cover the new bulk-upload endpoint.
 
 ### application-ui (Vitest)
 
@@ -197,9 +270,15 @@ Sanity-level coverage as prescribed (throwaway stub).
 
 ### questionnaire-admin-ui
 
-**No tests.** This is the only component that does not meet Requirement 11.
+**No tests.** This is the only component that does not meet Requirement 11 — and as of this
+run it carries meaningfully more untested logic than before (Code Sets page, bulk-upload
+flows, label rename, dropdown-source editor). Verified manually instead: `npm run build`
+after every change, plus one live round-trip against a running `questionnaire-service` for
+the Phase 4 acceptance criterion (see the Phase 4 commit message). No browser/E2E check was
+done for any of the four phases' UI — genuinely unverified beyond "it builds and the API
+contracts it calls are tested server-side."
 
-### Total: 64 tests, 64 passing, 0 failing
+### Total: 72 tests, 72 passing, 0 failing
 
 ---
 
@@ -207,11 +286,13 @@ Sanity-level coverage as prescribed (throwaway stub).
 
 | # | Area | Issue | Priority |
 |---|---|---|---|
-| 1 | `questionnaire-admin-ui` | No test suite (Requirement 11 gap) | Medium |
-| 2 | `questionnaire-service` | No `@SpringBootTest` integration tests for template lifecycle (create, publish, draft-revision) | Medium |
+| 1 | `questionnaire-admin-ui` | No test suite (Requirement 11 gap) — now covers Code Sets, bulk upload, rename, and dropdown-source editing with zero automated coverage | Medium |
+| 2 | `questionnaire-service` | No `@SpringBootTest` integration tests for the general template lifecycle (`create`, `publish` in isolation) — the two new integration tests cover bulk-upload and rename specifically | Medium |
 | 3 | `TemplateStatus` enum | Missing `RETIRED` value — superseded versions stay `ACTIVE` (functionally correct for POC, but wrong for production `listSections()` filtering) | Low |
 | 4 | `LABEL_TRANSLATION` table | Not built; keys rendered raw in UI | Low (deferred by design) |
 | 5 | Phase 7 findings doc | No load-test or Oracle-gap findings written (build instructions require it) | Low |
 | 6 | Slice F walkthrough | No prose walkthrough alongside the automated tests | Low |
 | 7 | `questionnaire-admin-ui` | No tab-level template editor (sections only); publish triggers `cloneForward` in application-service but no UI surface for confirming the new snapshot code | Low |
 | 8 | `application-ui` | `GridRenderer` has no Vitest tests (only `SectionRenderer` and `FieldRenderer` covered) | Low |
+| 9 | Bulk-upload CSV parsing | Naive `split(",")` in both new parsers — doesn't handle quoted fields containing commas. Matches the spec's explicit guidance; would need a real CSV library if hand-authored files start using quoted commas | Low |
+| 10 | `questionnaire-admin-ui` grid editing | Still out of scope (per Phase 0's own fix — grids round-trip unmodified but aren't editable in this UI); grid bulk-upload (Phase 2) is the only way to change grid columns without a direct API call | Low |
