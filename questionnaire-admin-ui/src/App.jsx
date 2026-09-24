@@ -35,9 +35,9 @@ const QS = {
     apiFetch(`/api/sections/${sectionId}/draft-revision`, {
       method: 'POST', body: JSON.stringify({ template }),
     }),
-  updateDraft: (sectionId, version, template) =>
+  updateDraft: (sectionId, version, template, labelKey = null) =>
     apiFetch(`/api/sections/${sectionId}/versions/${version}`, {
-      method: 'PUT', body: JSON.stringify({ template }),
+      method: 'PUT', body: JSON.stringify({ template, labelKey }),
     }),
   publish: (sectionId, version) =>
     apiFetch(`/api/sections/${sectionId}/versions/${version}/publish`, { method: 'POST' }),
@@ -181,7 +181,8 @@ function SectionEditor({ sectionMeta, onBack }) {
   const [grids, setGrids] = useState([]) // not editable in this UI — preserved as-is through save
   const [draftVersion, setDraftVersion] = useState(null) // null = editing from active, not yet saved
   const [loadedVersion, setLoadedVersion] = useState(null)
-  const [loadedLabelKey, setLoadedLabelKey] = useState('')
+  const [loadedLabelKey, setLoadedLabelKey] = useState('') // last-known persisted value
+  const [labelKeyInput, setLabelKeyInput] = useState('')   // editable field, may differ from loadedLabelKey
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
@@ -196,6 +197,7 @@ function SectionEditor({ sectionMeta, onBack }) {
     setGrids(data.template?.grids ?? [])
     setLoadedVersion(version)
     setLoadedLabelKey(data.labelKey)
+    setLabelKeyInput(data.labelKey)
     if (markAsDraft) setDraftVersion(version)
     return data
   }, [sectionMeta.sectionId])
@@ -282,21 +284,33 @@ function SectionEditor({ sectionMeta, onBack }) {
       setError('All fields must have a Field Key before saving.')
       return
     }
+    if (!labelKeyInput.trim()) {
+      setError('Label key cannot be empty.')
+      return
+    }
     setSaving(true)
     setError(null)
     setSuccess(null)
     try {
       const template = buildTemplate()
+      const renamed = labelKeyInput !== loadedLabelKey
       let saved
       if (draftVersion == null) {
-        // First save — create a new draft revision from active
+        // First save — create a new draft revision from active, then apply the rename
+        // (draft-revision creation doesn't carry labelKey; updateDraft does).
         saved = await QS.createDraftRevision(sectionMeta.sectionId, template)
+        if (renamed) {
+          saved = await QS.updateDraft(sectionMeta.sectionId, saved.version, template, labelKeyInput)
+        }
         setDraftVersion(saved.version)
         setLoadedVersion(saved.version)
       } else {
         // Update existing draft
-        saved = await QS.updateDraft(sectionMeta.sectionId, draftVersion, template)
+        saved = await QS.updateDraft(sectionMeta.sectionId, draftVersion, template,
+          renamed ? labelKeyInput : null)
       }
+      setLoadedLabelKey(saved.labelKey)
+      setLabelKeyInput(saved.labelKey)
       setSuccess(`Draft v${saved.version} saved successfully.`)
     } catch (e) {
       setError('Save failed: ' + e.message)
@@ -370,6 +384,22 @@ function SectionEditor({ sectionMeta, onBack }) {
 
       {success && <div className="msg-success">{success}</div>}
       {error && <div className="msg-error">{error}</div>}
+
+      <div className="card" style={{ padding: 14, marginBottom: 20, maxWidth: 420 }}>
+        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+          Label key
+        </label>
+        <input
+          type="text"
+          value={labelKeyInput}
+          onChange={e => { setLabelKeyInput(e.target.value); setSuccess(null) }}
+          readOnly={isReadOnly}
+          style={{
+            width: '100%', fontFamily: 'inherit', fontSize: 13, color: 'var(--text-primary)',
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: '6px 8px',
+          }}
+        />
+      </div>
 
       {!isReadOnly && (
         <div className="card" style={{ padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>

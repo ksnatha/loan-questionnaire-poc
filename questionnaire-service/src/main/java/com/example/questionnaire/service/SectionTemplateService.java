@@ -102,6 +102,11 @@ public class SectionTemplateService {
     }
 
     public SectionTemplate updateDraft(String sectionId, Integer version, SectionTemplateJson newTemplate) {
+        return updateDraft(sectionId, version, newTemplate, null);
+    }
+
+    public SectionTemplate updateDraft(String sectionId, Integer version, SectionTemplateJson newTemplate,
+                                        String labelKey) {
         SectionTemplate st = repo.findBySectionIdAndVersion(sectionId, version)
             .orElseThrow(() -> new NoSuchElementException("Not found: " + sectionId + " v" + version));
         if (st.getStatus() != TemplateStatus.DRAFT) {
@@ -116,6 +121,9 @@ public class SectionTemplateService {
             st.setHasGrid(newTemplate.grids != null && !newTemplate.grids.isEmpty());
             st.setDedicatedColumnRefs(objectMapper.writeValueAsString(refs));
             st.setTemplateJson(objectMapper.writeValueAsString(newTemplate));
+            if (labelKey != null) {
+                st.setLabelKey(labelKey);
+            }
             return repo.save(st);
         } catch (Exception e) {
             throw new RuntimeException("Failed to update draft", e);

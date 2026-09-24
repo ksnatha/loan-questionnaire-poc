@@ -53,7 +53,7 @@ public class SectionTemplateController {
     public SectionTemplateResponse updateDraft(@PathVariable String sectionId,
                                                 @PathVariable Integer version,
                                                 @RequestBody UpdateSectionRequest req) {
-        SectionTemplate st = service.updateDraft(sectionId, version, req.template);
+        SectionTemplate st = service.updateDraft(sectionId, version, req.template, req.labelKey);
         return service.toResponse(st);
     }
 
